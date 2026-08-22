@@ -80,7 +80,7 @@ export default async function Home() {
               </p>
 
               <p className="price">
-                QAR {Number(product.Price || 0).toFixed(2)}
+                KES {Number(product.Price || 0).toFixed(2)}
               </p>
 
               <button>Add to Cart</button>
