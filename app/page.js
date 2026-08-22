@@ -62,16 +62,20 @@ export default async function Home() {
           {products?.map((product) => (
             <div className="product-card" key={product.Name}>
               
-              <div className="product-image">
-                {product.image_url ? (
-                  <img
-                    src={product.image_url}
-                    alt={product.Name}
-                  />
-                ) : (
-                  "Product Image"
-                )}
-              </div>
+              <div
+  className="product-image"
+  onClick={() => window.open(product.image_url, "_blank")}
+  style={{ cursor: product.image_url ? "pointer" : "default" }}
+>
+  {product.image_url ? (
+    <img
+      src={product.image_url}
+      alt={product.Name}
+    />
+  ) : (
+    "Product Image"
+  )}
+</div>
 
               <h3>{product.Name}</h3>
 
