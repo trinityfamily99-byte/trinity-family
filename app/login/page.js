@@ -15,8 +15,8 @@ export default function Login() {
     setLoading(true);
     setMessage("");
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
       password,
     });
 
@@ -26,7 +26,15 @@ export default function Login() {
       return;
     }
 
-    window.location.href = "/";
+    if (data.user) {
+      setMessage("Login successful! Welcome to Trinity Family.");
+
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 1200);
+    }
+
+    setLoading(false);
   };
 
   return (
@@ -41,9 +49,12 @@ export default function Login() {
 
         <form onSubmit={handleLogin}>
 
-          <label>Email</label>
+          <label htmlFor="email">
+            Email
+          </label>
 
           <input
+            id="email"
             type="email"
             placeholder="Enter your email"
             value={email}
@@ -51,9 +62,12 @@ export default function Login() {
             required
           />
 
-          <label>Password</label>
+          <label htmlFor="password">
+            Password
+          </label>
 
           <input
+            id="password"
             type="password"
             placeholder="Enter your password"
             value={password}
@@ -78,7 +92,9 @@ export default function Login() {
           <a href="/register">Create Account</a>
         </p>
 
-        <a href="/">← Back to Shop</a>
+        <a href="/">
+          ← Back to Shop
+        </a>
 
       </section>
     </main>
