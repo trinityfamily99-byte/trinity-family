@@ -1,4 +1,30 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { supabase } from "../lib/supabase";
+
 export default function Home() {
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadProducts() {
+      const { data, error } = await supabase
+        .from("Products")
+        .select("*");
+
+      if (error) {
+        console.error("Error loading products:", error);
+      } else {
+        setProducts(data || []);
+      }
+
+      setLoading(false);
+    }
+
+    loadProducts();
+  }, []);
+
   return (
     <main>
       <header className="site-header">
@@ -36,31 +62,44 @@ export default function Home() {
 
       <section id="shop" className="shop-section">
         <h2>Our Products</h2>
+
         <p className="section-intro">
           Browse our products and choose what you need.
         </p>
 
         <div className="products">
-          <div className="product-card">
-            <div className="product-image">Product Image</div>
-            <h3>Product Name</h3>
-            <p className="price">KSh 0.00</p>
-            <button>Add to Cart</button>
-          </div>
+          {loading ? (
+            <p>Loading products...</p>
+          ) : products.length === 0 ? (
+            <p>No products available yet.</p>
+          ) : (
+            products.map((product) => (
+              <div className="product-card" key={product.id}>
+                <div className="product-image">
+                  {product.image_url ? (
+                    <img
+                      src={product.image_url}
+                      alt={product.name}
+                    />
+                  ) : (
+                    "Product Image"
+                  )}
+                </div>
 
-          <div className="product-card">
-            <div className="product-image">Product Image</div>
-            <h3>Product Name</h3>
-            <p className="price">KSh 0.00</p>
-            <button>Add to Cart</button>
-          </div>
+                <h3>{product.name}</h3>
 
-          <div className="product-card">
-            <div className="product-image">Product Image</div>
-            <h3>Product Name</h3>
-            <p className="price">KSh 0.00</p>
-            <button>Add to Cart</button>
-          </div>
+                <p className="description">
+                  {product.description}
+                </p>
+
+                <p className="price">
+                  KSh {Number(product.price || 0).toFixed(2)}
+                </p>
+
+                <button>Add to Cart</button>
+              </div>
+            ))
+          )}
         </div>
       </section>
 
