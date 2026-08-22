@@ -15,7 +15,7 @@ export default function Login() {
     setLoading(true);
     setMessage("");
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email: email.trim(),
       password,
     });
@@ -26,12 +26,35 @@ export default function Login() {
       return;
     }
 
-    if (data.user) {
-      setMessage("Login successful! Welcome to Trinity Family.");
+    setMessage("Login successful! Welcome back.");
 
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 1200);
+    setTimeout(() => {
+      window.location.href = "/";
+    }, 1000);
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setMessage("Please enter your email address first.");
+      return;
+    }
+
+    setLoading(true);
+    setMessage("");
+
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email.trim(),
+      {
+        redirectTo: `${window.location.origin}/reset-password`,
+      }
+    );
+
+    if (error) {
+      setMessage(error.message);
+    } else {
+      setMessage(
+        "Password reset email sent. Please check your email."
+      );
     }
 
     setLoading(false);
@@ -49,9 +72,7 @@ export default function Login() {
 
         <form onSubmit={handleLogin}>
 
-          <label htmlFor="email">
-            Email
-          </label>
+          <label htmlFor="email">Email</label>
 
           <input
             id="email"
@@ -62,9 +83,7 @@ export default function Login() {
             required
           />
 
-          <label htmlFor="password">
-            Password
-          </label>
+          <label htmlFor="password">Password</label>
 
           <input
             id="password"
@@ -81,6 +100,15 @@ export default function Login() {
 
         </form>
 
+        <button
+          type="button"
+          onClick={handleForgotPassword}
+          disabled={loading}
+          className="forgot-password"
+        >
+          Forgot Password?
+        </button>
+
         {message && (
           <p className="auth-message">
             {message}
@@ -92,9 +120,7 @@ export default function Login() {
           <a href="/register">Create Account</a>
         </p>
 
-        <a href="/">
-          ← Back to Shop
-        </a>
+        <a href="/">← Back to Shop</a>
 
       </section>
     </main>
