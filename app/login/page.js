@@ -6,8 +6,10 @@ import { supabase } from "../../lib/supabase";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -30,7 +32,7 @@ export default function Login() {
 
     setTimeout(() => {
       window.location.href = "/";
-    }, 1000);
+    }, 800);
   };
 
   const handleForgotPassword = async () => {
@@ -39,25 +41,28 @@ export default function Login() {
       return;
     }
 
-    setLoading(true);
+    setResetLoading(true);
     setMessage("");
 
     const { error } = await supabase.auth.resetPasswordForEmail(
       email.trim(),
       {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo:
+          "https://trinity-family.vercel.app/reset-password",
       }
     );
 
     if (error) {
       setMessage(error.message);
-    } else {
-      setMessage(
-        "Password reset email sent. Please check your email."
-      );
+      setResetLoading(false);
+      return;
     }
 
-    setLoading(false);
+    setMessage(
+      "Password reset email sent! Please check your email and follow the link to create a new password."
+    );
+
+    setResetLoading(false);
   };
 
   return (
@@ -72,30 +77,43 @@ export default function Login() {
 
         <form onSubmit={handleLogin}>
 
-          <label htmlFor="email">Email</label>
+          <label htmlFor="email">
+            Email
+          </label>
 
           <input
             id="email"
             type="email"
             placeholder="Enter your email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) =>
+              setEmail(e.target.value)
+            }
             required
           />
 
-          <label htmlFor="password">Password</label>
+          <label htmlFor="password">
+            Password
+          </label>
 
           <input
             id="password"
             type="password"
             placeholder="Enter your password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            onChange={(e) =>
+              setPassword(e.target.value)
+            }
             required
           />
 
-          <button type="submit" disabled={loading}>
-            {loading ? "Logging in..." : "Login"}
+          <button
+            type="submit"
+            disabled={loading}
+          >
+            {loading
+              ? "Logging in..."
+              : "Login"}
           </button>
 
         </form>
@@ -103,10 +121,12 @@ export default function Login() {
         <button
           type="button"
           onClick={handleForgotPassword}
-          disabled={loading}
-          className="forgot-password"
+          disabled={resetLoading}
+          className="forgot-password-button"
         >
-          Forgot Password?
+          {resetLoading
+            ? "Sending..."
+            : "Forgot Password?"}
         </button>
 
         {message && (
@@ -117,10 +137,14 @@ export default function Login() {
 
         <p className="auth-link">
           Don't have an account?{" "}
-          <a href="/register">Create Account</a>
+          <a href="/register">
+            Create Account
+          </a>
         </p>
 
-        <a href="/">← Back to Shop</a>
+        <a href="/">
+          ← Back to Shop
+        </a>
 
       </section>
     </main>
