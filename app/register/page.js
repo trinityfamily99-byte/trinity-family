@@ -3,151 +3,213 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 
-export default function Register() {
-  const [form, setForm] = useState({
-    name: "",
-    phone: "",
-    location: "",
-    email: "",
-    password: "",
-  });
+export default function RegisterPage() {
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [location, setLocation] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleRegister = async (e) => {
+  async function handleRegister(e) {
     e.preventDefault();
 
-    setLoading(true);
     setMessage("");
 
-    const { data, error } = await supabase.auth.signUp({
-      email: form.email,
-      password: form.password,
-    });
-
-    if (error) {
-      setMessage(error.message);
-      setLoading(false);
+    // Check password match
+    if (password !== confirmPassword) {
+      setMessage("Passwords do not match. Please try again.");
       return;
     }
 
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .insert([
-          {
-            id: data.user.id,
-            name: form.name,
-            phone: form.phone,
-            location: form.location,
-          },
-        ]);
+    // Basic password length check
+    if (password.length < 6) {
+      setMessage("Password must be at least 6 characters.");
+      return;
+    }
 
-      if (profileError) {
-        setMessage(profileError.message);
+    setLoading(true);
+
+    try {
+      // Create Supabase account
+      const { data, error } = await supabase.auth.signUp({
+        email: email.trim(),
+        password: password,
+        options: {
+          data: {
+            full_name: fullName.trim(),
+            phone: phone.trim(),
+            location: location.trim(),
+          },
+        },
+      });
+
+      if (error) {
+        setMessage(error.message);
         setLoading(false);
         return;
       }
+
+      // Account created successfully
+      if (data.user) {
+        setMessage(
+          "Account created successfully! You can now log in."
+        );
+      }
+
+      // Clear form
+      setFullName("");
+      setPhone("");
+      setLocation("");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+    } catch (error) {
+      setMessage("Something went wrong. Please try again.");
     }
 
-    setMessage(
-      "Registration successful! Please check your email to confirm your account."
-    );
-
     setLoading(false);
-  };
+  }
 
   return (
     <main className="auth-page">
-      <section className="auth-card">
+      <div className="auth-container">
+
         <h1>Trinity Family</h1>
 
         <h2>Create Account</h2>
 
-        <p>
+        <p className="auth-intro">
           Register to shop with us and save your delivery details.
         </p>
 
-        <form onSubmit={handleRegister}>
+        <form onSubmit={handleRegister} className="auth-form">
 
-          <label>Full Name</label>
-          <input
-            type="text"
-            name="name"
-            placeholder="Enter your full name"
-            value={form.name}
-            onChange={handleChange}
-            required
-          />
+          {/* FULL NAME */}
+          <div className="form-group">
+            <label htmlFor="fullName">
+              Full Name
+            </label>
 
-          <label>Phone Number</label>
-          <input
-            type="tel"
-            name="phone"
-            placeholder="e.g. 0712 345 678"
-            value={form.phone}
-            onChange={handleChange}
-            required
-          />
+            <input
+              id="fullName"
+              type="text"
+              placeholder="Enter your full name"
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              required
+            />
+          </div>
 
-          <label>Delivery Location</label>
-          <input
-            type="text"
-            name="location"
-            placeholder="Enter your location"
-            value={form.location}
-            onChange={handleChange}
-            required
-          />
+          {/* PHONE */}
+          <div className="form-group">
+            <label htmlFor="phone">
+              Phone Number
+            </label>
 
-          <label>Email</label>
-          <input
-            type="email"
-            name="email"
-            placeholder="Enter your email"
-            value={form.email}
-            onChange={handleChange}
-            required
-          />
+            <input
+              id="phone"
+              type="tel"
+              placeholder="e.g. 0727 757 996"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+            />
+          </div>
 
-          <label>Password</label>
-          <input
-            type="password"
-            name="password"
-            placeholder="Create a password"
-            value={form.password}
-            onChange={handleChange}
-            required
-            minLength="6"
-          />
+          {/* LOCATION */}
+          <div className="form-group">
+            <label htmlFor="location">
+              Delivery Location
+            </label>
 
-          <button type="submit" disabled={loading}>
+            <input
+              id="location"
+              type="text"
+              placeholder="Enter your delivery location"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* EMAIL */}
+          <div className="form-group">
+            <label htmlFor="email">
+              Email Address
+            </label>
+
+            <input
+              id="email"
+              type="email"
+              placeholder="example@gmail.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* PASSWORD */}
+          <div className="form-group">
+            <label htmlFor="password">
+              Create Password
+            </label>
+
+            <input
+              id="password"
+              type="password"
+              placeholder="Create your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          {/* CONFIRM PASSWORD */}
+          <div className="form-group">
+            <label htmlFor="confirmPassword">
+              Confirm Password
+            </label>
+
+            <input
+              id="confirmPassword"
+              type="password"
+              placeholder="Confirm your password"
+              value={confirmPassword}
+              onChange={(e) =>
+                setConfirmPassword(e.target.value)
+              }
+              required
+            />
+          </div>
+
+          {/* MESSAGE */}
+          {message && (
+            <p className="auth-message">
+              {message}
+            </p>
+          )}
+
+          {/* CREATE ACCOUNT */}
+          <button
+            type="submit"
+            className="auth-button"
+            disabled={loading}
+          >
             {loading ? "Creating Account..." : "Create Account"}
           </button>
 
         </form>
-
-        {message && (
-          <p className="auth-message">
-            {message}
-          </p>
-        )}
 
         <p className="auth-link">
           Already have an account?{" "}
           <a href="/login">Login</a>
         </p>
 
-        <a href="/">← Back to Shop</a>
-      </section>
+      </div>
     </main>
   );
 }
