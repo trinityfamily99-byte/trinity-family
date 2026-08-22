@@ -1,29 +1,10 @@
-"use client";
+import { supabase } from "@/lib/supabase";
 
-import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
-
-export default function Home() {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function loadProducts() {
-      const { data, error } = await supabase
-        .from("Products")
-        .select("*");
-
-      if (error) {
-        console.error("Error loading products:", error);
-      } else {
-        setProducts(data || []);
-      }
-
-      setLoading(false);
-    }
-
-    loadProducts();
-  }, []);
+export default async function Home() {
+  const { data: products, error } = await supabase
+    .from("Products")
+    .select("*")
+    .order("id", { ascending: true });
 
   return (
     <main>
@@ -67,44 +48,45 @@ export default function Home() {
           Browse our products and choose what you need.
         </p>
 
+        {error && (
+          <p>
+            Unable to load products at the moment.
+          </p>
+        )}
+
         <div className="products">
-          {loading ? (
-            <p>Loading products...</p>
-          ) : products.length === 0 ? (
-            <p>No products available yet.</p>
-          ) : (
-            products.map((product) => (
-              <div className="product-card" key={product.id}>
-                <div className="product-image">
-                  {product.image_url ? (
-                    <img
-                      src={product.image_url}
-                      alt={product.name}
-                    />
-                  ) : (
-                    "Product Image"
-                  )}
-                </div>
-
-                <h3>{product.name}</h3>
-
-                <p className="description">
-                  {product.description}
-                </p>
-
-                <p className="price">
-                  KSh {Number(product.price || 0).toFixed(2)}
-                </p>
-
-                <button>Add to Cart</button>
+          {products?.map((product) => (
+            <div className="product-card" key={product.id}>
+              <div className="product-image">
+                {product.image_url ? (
+                  <img
+                    src={product.image_url}
+                    alt={product.name}
+                  />
+                ) : (
+                  "Product Image"
+                )}
               </div>
-            ))
-          )}
+
+              <h3>{product.name}</h3>
+
+              <p>
+                {product.description}
+              </p>
+
+              <p className="price">
+                KSh {Number(product.price || 0).toFixed(2)}
+              </p>
+
+              <button>Add to Cart</button>
+            </div>
+          ))}
         </div>
       </section>
 
       <section id="about" className="about-section">
         <h2>About Trinity Family</h2>
+
         <p>
           Trinity Family is an online shop created to make shopping simple,
           convenient and accessible to our customers.
