@@ -19,22 +19,28 @@ export default function RegisterPage() {
 
     setMessage("");
 
-    // Check password match
+    // Make sure passwords match
     if (password !== confirmPassword) {
-      setMessage("Passwords do not match. Please try again.");
+      setMessage("Passwords do not match. Please make sure both passwords are the same.");
       return;
     }
 
-    // Basic password length check
+    // Password length
     if (password.length < 6) {
       setMessage("Password must be at least 6 characters.");
+      return;
+    }
+
+    // Make sure required information is provided
+    if (!fullName.trim() || !phone.trim() || !location.trim() || !email.trim()) {
+      setMessage("Please fill in all required fields.");
       return;
     }
 
     setLoading(true);
 
     try {
-      // Create Supabase account
+      // Create the customer's login account
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password: password,
@@ -53,7 +59,7 @@ export default function RegisterPage() {
         return;
       }
 
-      // Account created successfully
+      // Account created
       if (data.user) {
         setMessage(
           "Account created successfully! You can now log in."
@@ -67,6 +73,7 @@ export default function RegisterPage() {
       setEmail("");
       setPassword("");
       setConfirmPassword("");
+
     } catch (error) {
       setMessage("Something went wrong. Please try again.");
     }
@@ -120,7 +127,7 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* LOCATION */}
+          {/* DELIVERY LOCATION */}
           <div className="form-group">
             <label htmlFor="location">
               Delivery Location
@@ -152,7 +159,7 @@ export default function RegisterPage() {
             />
           </div>
 
-          {/* PASSWORD */}
+          {/* CREATE PASSWORD */}
           <div className="form-group">
             <label htmlFor="password">
               Create Password
@@ -165,6 +172,7 @@ export default function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              minLength={6}
             />
           </div>
 
@@ -183,6 +191,7 @@ export default function RegisterPage() {
                 setConfirmPassword(e.target.value)
               }
               required
+              minLength={6}
             />
           </div>
 
@@ -199,7 +208,9 @@ export default function RegisterPage() {
             className="auth-button"
             disabled={loading}
           >
-            {loading ? "Creating Account..." : "Create Account"}
+            {loading
+              ? "Creating Account..."
+              : "Create Account"}
           </button>
 
         </form>
