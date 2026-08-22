@@ -4,24 +4,269 @@
   padding: 0;
 }
 
-html,
-body {
-  max-width: 100%;
-  overflow-x: hidden;
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   font-family: Arial, Helvetica, sans-serif;
-  background: #f8f5ef;
+  background: #f7f3eb;
   color: #222;
+  line-height: 1.6;
 }
 
 a {
-  color: inherit;
   text-decoration: none;
+  color: inherit;
 }
 
-button,
-input {
+button {
+  cursor: pointer;
   font: inherit;
+}
+
+/* HEADER */
+
+.site-header {
+  background: #17365d;
+  color: white;
+  padding: 15px 6%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo-placeholder {
+  width: 55px;
+  height: 55px;
+  border-radius: 50%;
+  background: white;
+  color: #17365d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.brand h1 {
+  font-size: 22px;
+  letter-spacing: 1px;
+}
+
+.brand p {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+nav {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+nav a {
+  font-size: 15px;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+.login-button {
+  border: none;
+  background: #d9a441;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+/* HERO */
+
+.hero {
+  min-height: 380px;
+  background: linear-gradient(
+      rgba(23, 54, 93, 0.75),
+      rgba(23, 54, 93, 0.75)
+    ),
+    url("/images/shop-banner.jpg");
+
+  background-size: cover;
+  background-position: center;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: white;
+  padding: 60px 20px;
+}
+
+.hero h2 {
+  font-size: 42px;
+  margin-bottom: 15px;
+}
+
+.hero p {
+  max-width: 650px;
+  margin: auto;
+  font-size: 18px;
+}
+
+.shop-button {
+  display: inline-block;
+  margin-top: 25px;
+  background: #d9a441;
+  color: white;
+  padding: 13px 30px;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+/* SHOP */
+
+.shop-section {
+  max-width: 1200px;
+  margin: auto;
+  padding: 70px 20px;
+  text-align: center;
+}
+
+.shop-section h2,
+.about-section h2 {
+  color: #17365d;
+  font-size: 30px;
+  margin-bottom: 10px;
+}
+
+.section-intro {
+  color: #666;
+  margin-bottom: 35px;
+}
+
+.products {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 25px;
+}
+
+.product-card {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+  padding-bottom: 20px;
+}
+
+.product-image {
+  height: 220px;
+  background: #e8e3da;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #777;
+}
+
+.product-card h3 {
+  margin: 18px 10px 5px;
+}
+
+.price {
+  color: #17365d;
+  font-weight: bold;
+  font-size: 18px;
+  margin-bottom: 15px;
+}
+
+.product-card button {
+  background: #17365d;
+  color: white;
+  border: none;
+  padding: 10px 22px;
+  border-radius: 5px;
+}
+
+.product-card button:hover {
+  background: #0e2745;
+}
+
+/* ABOUT */
+
+.about-section {
+  background: #fff;
+  padding: 70px 20px;
+  text-align: center;
+}
+
+.about-section p {
+  max-width: 750px;
+  margin: 15px auto 0;
+  color: #555;
+}
+
+/* FOOTER */
+
+footer {
+  background: #0b1d3a;
+  color: white;
+  text-align: center;
+  padding: 45px 20px;
+}
+
+footer h2 {
+  margin-bottom: 15px;
+}
+
+footer p {
+  margin: 6px 0;
+  font-size: 14px;
+  color: #ddd;
+}
+
+/* MOBILE */
+
+@media (max-width: 768px) {
+  .site-header {
+    justify-content: center;
+    text-align: center;
+  }
+
+  .brand {
+    justify-content: center;
+  }
+
+  nav {
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .hero {
+    min-height: 330px;
+  }
+
+  .hero h2 {
+    font-size: 30px;
+  }
+
+  .hero p {
+    font-size: 16px;
+  }
+
+  .products {
+    grid-template-columns: 1fr;
+  }
+
+  .product-image {
+    height: 240px;
+  }
 }
