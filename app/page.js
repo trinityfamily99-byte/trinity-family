@@ -7,7 +7,6 @@ export default function Home() {
   const [products, setProducts] = useState([]);
   const [error, setError] = useState(null);
   const [cart, setCart] = useState([]);
-  const [showCart, setShowCart] = useState(false);
 
   // Load products from Supabase
   useEffect(() => {
@@ -68,51 +67,11 @@ export default function Home() {
         },
       ];
     });
-
-    setShowCart(true);
-  }
-
-  // Increase quantity
-  function increaseQuantity(name) {
-    setCart((currentCart) =>
-      currentCart.map((item) =>
-        item.Name === name
-          ? { ...item, quantity: item.quantity + 1 }
-          : item
-      )
-    );
-  }
-
-  // Decrease quantity
-  function decreaseQuantity(name) {
-    setCart((currentCart) =>
-      currentCart
-        .map((item) =>
-          item.Name === name
-            ? { ...item, quantity: item.quantity - 1 }
-            : item
-        )
-        .filter((item) => item.quantity > 0)
-    );
-  }
-
-  // Remove item completely
-  function removeFromCart(name) {
-    setCart((currentCart) =>
-      currentCart.filter((item) => item.Name !== name)
-    );
   }
 
   // Number of products in cart
   const cartCount = cart.reduce(
     (total, item) => total + item.quantity,
-    0
-  );
-
-  // Total price
-  const cartTotal = cart.reduce(
-    (total, item) =>
-      total + Number(item.Price || 0) * item.quantity,
     0
   );
 
@@ -136,11 +95,21 @@ export default function Home() {
           <a href="#contact">Contact</a>
 
           <a href="/cart" className="cart-button">
-  🛒 Cart
-  {cartCount > 0 && (
-    <span className="cart-count">{cartCount}</span>
-  )}
-</a>
+            🛒 Cart
+            {cartCount > 0 && (
+              <span className="cart-count">
+                {cartCount}
+              </span>
+            )}
+          </a>
+
+          <a href="/login" className="login-button">
+            Login
+          </a>
+
+          <a href="/register" className="register-button">
+            Register
+          </a>
         </nav>
       </header>
 
@@ -263,7 +232,6 @@ export default function Home() {
           © 2026 Trinity Family. All rights reserved.
         </p>
       </footer>
-
     </main>
   );
 }
