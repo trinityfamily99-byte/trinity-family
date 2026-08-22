@@ -11,21 +11,77 @@ export default function ResetPassword() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+    let mounted = true;
 
-      if (session) {
-        setReady(true);
-      } else {
-        setMessage(
-          "This password reset link is invalid or has expired. Please request a new one."
-        );
+    const prepareReset = async () => {
+      try {
+        const url = new URL(window.location.href);
+        const code = url.searchParams.get("code");
+
+        // If Supabase sent a recovery code, exchange it for a session
+        if (code) {
+          const { error } =
+            await supabase.auth.exchangeCodeForSession(code);
+
+          if (error) {
+            if (mounted) {
+              setMessage(
+                "This password reset link is invalid or has expired. Please request a new one."
+              );
+            }
+            return;
+          }
+        }
+
+        // Give Supabase a moment to process recovery links
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+
+        if (mounted) {
+          if (session) {
+            setReady(true);
+            setMessage("");
+          } else {
+            setMessage(
+              "This password reset link is invalid or has expired. Please request a new one."
+            );
+          }
+        }
+      } catch (error) {
+        if (mounted) {
+          setMessage(
+            "Unable to verify the password reset link. Please request a new one."
+          );
+        }
       }
     };
 
-    checkSession();
+    prepareReset();
+
+    // Listen for Supabase authentication changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!mounted) return;
+
+        if (
+          event === "PASSWORD_RECOVERY" ||
+          session
+        ) {
+          setReady(true);
+          setMessage("");
+        }
+      }
+    );
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleUpdatePassword = async (e) => {
