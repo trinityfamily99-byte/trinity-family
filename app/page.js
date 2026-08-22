@@ -3,7 +3,8 @@ import { supabase } from "@/lib/supabase";
 export default async function Home() {
   const { data: products, error } = await supabase
     .from("Products")
-    .select("*");
+    .select("*")
+    .order("Name", { ascending: true });
 
   return (
     <main>
@@ -48,12 +49,19 @@ export default async function Home() {
         </p>
 
         {error && (
-          <p>Unable to load products at the moment.</p>
+          <p>
+            Unable to load products: {error.message}
+          </p>
+        )}
+
+        {!error && (!products || products.length === 0) && (
+          <p>No products available yet.</p>
         )}
 
         <div className="products">
           {products?.map((product) => (
             <div className="product-card" key={product.Name}>
+              
               <div className="product-image">
                 {product.image_url ? (
                   <img
@@ -67,10 +75,12 @@ export default async function Home() {
 
               <h3>{product.Name}</h3>
 
-              <p>{product.Description}</p>
+              <p>
+                {product.Description}
+              </p>
 
               <p className="price">
-                KSh {Number(product.Price || 0).toFixed(2)}
+                QAR {Number(product.Price || 0).toFixed(2)}
               </p>
 
               <button>Add to Cart</button>
