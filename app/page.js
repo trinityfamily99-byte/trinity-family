@@ -7,6 +7,56 @@ export default function Home() {
   const [products, setProducts] = useState([]);
   const [error, setError] = useState(null);
   const [cart, setCart] = useState([]);
+  const [user, setUser] = useState(null);
+  const [profile, setProfile] = useState(null);
+
+  // Check logged-in customer
+  useEffect(() => {
+    async function loadUser() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      setUser(user);
+
+      if (user) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        setProfile(profileData);
+      }
+    }
+
+    loadUser();
+
+    // Listen for login/logout changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user || null;
+
+      setUser(currentUser);
+
+      if (currentUser) {
+        const { data: profileData } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("id", currentUser.id)
+          .maybeSingle();
+
+        setProfile(profileData);
+      } else {
+        setProfile(null);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // Load products from Supabase
   useEffect(() => {
@@ -69,6 +119,12 @@ export default function Home() {
     });
   }
 
+  // Logout
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  }
+
   // Number of products in cart
   const cartCount = cart.reduce(
     (total, item) => total + item.quantity,
@@ -103,13 +159,34 @@ export default function Home() {
             )}
           </a>
 
-          <a href="/login" className="login-button">
-            Login
-          </a>
+          {user ? (
+            <>
+              <span className="welcome-user">
+                👋 Welcome,{" "}
+                {profile?.full_name ||
+                  profile?.name ||
+                  user.user_metadata?.full_name ||
+                  "Customer"}
+              </span>
 
-          <a href="/register" className="register-button">
-            Register
-          </a>
+              <button
+                onClick={handleLogout}
+                className="logout-button"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <a href="/login" className="login-button">
+                Login
+              </a>
+
+              <a href="/register" className="register-button">
+                Register
+              </a>
+            </>
+          )}
         </nav>
       </header>
 
