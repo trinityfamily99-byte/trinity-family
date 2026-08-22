@@ -1,3 +1,5 @@
+import "./globals.css";
+
 export const metadata = {
   title: "Trinity Family",
   description: "Trinity Family — Your trusted online shopping store.",
