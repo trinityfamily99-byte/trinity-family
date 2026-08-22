@@ -135,19 +135,12 @@ export default function Home() {
           <a href="#about">About</a>
           <a href="#contact">Contact</a>
 
-          <button
-            className="cart-button"
-            onClick={() => setShowCart(true)}
-          >
-            🛒 Cart
-            {cartCount > 0 && (
-              <span className="cart-count">{cartCount}</span>
-            )}
-          </button>
-
-          <button className="login-button">
-            Login
-          </button>
+          <a href="/cart" className="cart-button">
+  🛒 Cart
+  {cartCount > 0 && (
+    <span className="cart-count">{cartCount}</span>
+  )}
+</a>
         </nav>
       </header>
 
