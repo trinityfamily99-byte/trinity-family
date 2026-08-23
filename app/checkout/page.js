@@ -4,24 +4,19 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 
 export default function Checkout() {
-  const [user, setUser] = useState(null);
-  const [profile, setProfile] = useState(null);
-
   const [form, setForm] = useState({
     name: "",
     phone: "",
     email: "",
     location: "",
-    notes: "",
+    additional_information: "",
   });
 
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [message, setMessage] = useState("");
 
-  // Load logged-in user and profile
+  // Load registered customer details
   useEffect(() => {
-    async function loadCustomer() {
+    async function loadCustomerDetails() {
       setLoading(true);
 
       const {
@@ -33,110 +28,62 @@ export default function Checkout() {
         return;
       }
 
-      setUser(user);
-
-      const { data: profileData, error } = await supabase
+      // Get profile details from Supabase
+      const { data: profile, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .maybeSingle();
 
       if (error) {
-        console.error("Profile error:", error);
-        setMessage(
-          "We could not load your profile details. Please try again."
-        );
-        setLoading(false);
-        return;
+        console.error("Profile loading error:", error);
       }
-
-      setProfile(profileData);
 
       setForm({
         name:
-          profileData?.full_name ||
-          profileData?.name ||
+          profile?.full_name ||
+          profile?.name ||
           user.user_metadata?.full_name ||
           "",
         phone:
-          profileData?.phone ||
+          profile?.phone ||
           user.user_metadata?.phone ||
           "",
         email: user.email || "",
         location:
-          profileData?.location_url ||
-          profileData?.location_address ||
+          profile?.location ||
           "",
-        notes: "",
+        additional_information: "",
       });
 
       setLoading(false);
     }
 
-    loadCustomer();
+    loadCustomerDetails();
   }, []);
 
-  function handleChange(e) {
-    setForm((current) => ({
-      ...current,
+  const handleChange = (e) => {
+    setForm({
+      ...form,
       [e.target.name]: e.target.value,
-    }));
-  }
+    });
+  };
 
-  async function handleSubmit(e) {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
-    setSubmitting(true);
-    setMessage("");
+    alert(
+      "Order received! We will contact you to confirm your order."
+    );
 
-    try {
-      // Save any edited customer details back to the profile
-      if (user) {
-        const { error } = await supabase
-          .from("profiles")
-          .update({
-            full_name: form.name.trim(),
-            phone: form.phone.trim(),
-          })
-          .eq("id", user.id);
-
-        if (error) {
-          console.error("Profile update error:", error);
-        }
-      }
-
-      alert(
-        "Order received! We will contact you to confirm your order."
-      );
-
-      console.log("Customer Order:", {
-        customer_id: user?.id,
-        name: form.name,
-        phone: form.phone,
-        email: form.email,
-        location: form.location,
-        notes: form.notes,
-      });
-
-      setMessage(
-        "Order received successfully! We will contact you to confirm your order."
-      );
-    } catch (error) {
-      console.error(error);
-      setMessage(
-        "Something went wrong. Please try again."
-      );
-    }
-
-    setSubmitting(false);
-  }
+    console.log("Customer Order:", form);
+  };
 
   if (loading) {
     return (
       <main className="checkout-page">
         <section className="checkout-container">
           <h2>Loading your details...</h2>
-          <p>Please wait.</p>
         </section>
       </main>
     );
@@ -161,6 +108,7 @@ export default function Checkout() {
 
         <form onSubmit={handleSubmit}>
 
+          {/* FULL NAME */}
           <label htmlFor="name">
             Full Name
           </label>
@@ -175,6 +123,7 @@ export default function Checkout() {
             required
           />
 
+          {/* PHONE */}
           <label htmlFor="phone">
             Phone Number
           </label>
@@ -189,6 +138,7 @@ export default function Checkout() {
             required
           />
 
+          {/* EMAIL */}
           <label htmlFor="email">
             Email Address
           </label>
@@ -201,6 +151,7 @@ export default function Checkout() {
             readOnly
           />
 
+          {/* DELIVERY LOCATION */}
           <label htmlFor="location">
             Delivery Location
           </label>
@@ -215,33 +166,26 @@ export default function Checkout() {
             required
           />
 
-          <label htmlFor="notes">
-            Order Notes
+          {/* ADDITIONAL INFORMATION */}
+          <label htmlFor="additional_information">
+            Additional Information
           </label>
 
           <textarea
-            id="notes"
-            name="notes"
-            placeholder="Any additional instructions? (Optional)"
-            value={form.notes}
+            id="additional_information"
+            name="additional_information"
+            placeholder="Anything else you would like us to know? (Optional)"
+            value={form.additional_information}
             onChange={handleChange}
             rows="4"
           />
 
-          {message && (
-            <p className="auth-message">
-              {message}
-            </p>
-          )}
-
+          {/* PLACE ORDER */}
           <button
             type="submit"
             className="place-order-button"
-            disabled={submitting}
           >
-            {submitting
-              ? "Processing..."
-              : "Place Order"}
+            Place Order
           </button>
 
         </form>
