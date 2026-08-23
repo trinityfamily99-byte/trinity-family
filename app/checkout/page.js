@@ -112,21 +112,129 @@ export default function Checkout() {
     });
   };
 
-  const handleSubmit = (e) => {
+  // PLACE ORDER
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    const orderData = {
-      ...form,
-      latitude,
-      longitude,
-      location_url: locationUrl,
-    };
+    try {
+      setLoading(true);
 
-    alert(
-      "Order received! We will contact you to confirm your order."
-    );
+      // Get logged-in customer
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    console.log("Customer Order:", orderData);
+      if (!user) {
+        alert("Please log in before placing your order.");
+        return;
+      }
+
+      // Get cart from localStorage
+      const savedCart =
+        localStorage.getItem("trinity-cart");
+
+      if (!savedCart) {
+        alert("Your cart is empty.");
+        return;
+      }
+
+      let cartItems;
+
+      try {
+        cartItems = JSON.parse(savedCart);
+      } catch {
+        alert("There was a problem loading your cart.");
+        return;
+      }
+
+      if (
+        !Array.isArray(cartItems) ||
+        cartItems.length === 0
+      ) {
+        alert("Your cart is empty.");
+        return;
+      }
+
+      // Calculate total
+      const totalAmount = cartItems.reduce(
+        (total, item) =>
+          total +
+          Number(item.Price || 0) *
+            Number(item.quantity || 0),
+        0
+      );
+
+      // Prepare products for the order
+      const orderItems = cartItems.map((item) => ({
+        name: item.Name,
+        price: Number(item.Price || 0),
+        quantity: Number(item.quantity || 0),
+        image_url: item.image_url || null,
+      }));
+
+      // Create order
+      const orderData = {
+        user_id: user.id,
+
+        customer_name: form.name,
+        phone: form.phone,
+        email: form.email,
+
+        location: form.location,
+        latitude: latitude,
+        longitude: longitude,
+        location_url: locationUrl,
+
+        additional_information:
+          form.additionalInfo,
+
+        items: orderItems,
+        total_amount: totalAmount,
+
+        status: "pending",
+      };
+
+      const { data, error } = await supabase
+        .from("orders")
+        .insert(orderData)
+        .select()
+        .single();
+
+      if (error) {
+        console.error(
+          "Order creation error:",
+          error
+        );
+
+        alert(
+          "There was a problem placing your order. Please try again."
+        );
+
+        return;
+      }
+
+      console.log("Order created:", data);
+
+      // Clear cart after successful order
+      localStorage.removeItem("trinity-cart");
+
+      alert(
+        "Order received! We will contact you to confirm your order."
+      );
+
+    } catch (error) {
+      console.error(
+        "Unexpected order error:",
+        error
+      );
+
+      alert(
+        "Something went wrong. Please try again."
+      );
+
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -274,8 +382,11 @@ export default function Checkout() {
           <button
             type="submit"
             className="place-order-button"
+            disabled={loading}
           >
-            Place Order
+            {loading
+              ? "Placing Order..."
+              : "Place Order"}
           </button>
 
         </form>
