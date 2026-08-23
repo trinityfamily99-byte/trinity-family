@@ -17,7 +17,6 @@ export default function RegisterPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // GET CUSTOMER'S GPS LOCATION
   function getLocation() {
     setLocationStatus("Getting your location...");
     setMessage("");
@@ -38,7 +37,7 @@ export default function RegisterPage() {
         setLongitude(lng);
 
         setLocationStatus(
-          "✓ Delivery location captured successfully."
+          "✓ Your delivery location has been captured successfully."
         );
       },
       (error) => {
@@ -61,7 +60,6 @@ export default function RegisterPage() {
 
     setMessage("");
 
-    // PASSWORD MATCH
     if (password !== confirmPassword) {
       setMessage(
         "Passwords do not match. Please check your passwords."
@@ -69,7 +67,6 @@ export default function RegisterPage() {
       return;
     }
 
-    // PASSWORD LENGTH
     if (password.length < 6) {
       setMessage(
         "Password must be at least 6 characters."
@@ -77,7 +74,6 @@ export default function RegisterPage() {
       return;
     }
 
-    // LOCATION REQUIRED
     if (latitude === null || longitude === null) {
       setMessage(
         "Please capture your delivery location before creating your account."
@@ -88,7 +84,10 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // CREATE ACCOUNT
+      const locationUrl =
+        `https://www.google.com/maps?q=${latitude},${longitude}`;
+
+      // Create account
       const { data, error } =
         await supabase.auth.signUp({
           email: email.trim(),
@@ -100,7 +99,8 @@ export default function RegisterPage() {
               phone: phone.trim(),
               latitude: latitude,
               longitude: longitude,
-              location_url: `https://www.google.com/maps?q=${latitude},${longitude}`,
+              location: `${latitude}, ${longitude}`,
+              location_url: locationUrl,
             },
           },
         });
@@ -111,34 +111,38 @@ export default function RegisterPage() {
         return;
       }
 
-      // SAVE LOCATION TO PROFILE
+      // Save customer details to profile
       if (data.user) {
         const { error: profileError } =
           await supabase
             .from("profiles")
-            .update({
-              name: fullName.trim(),
-              phone: phone.trim(),
-              latitude: latitude,
-              longitude: longitude,
-              location_url: `https://www.google.com/maps?q=${latitude},${longitude}`,
-            })
-            .eq("id", data.user.id);
+            .upsert(
+              {
+                id: data.user.id,
+                name: fullName.trim(),
+                phone: phone.trim(),
+                latitude: latitude,
+                longitude: longitude,
+                location: `${latitude}, ${longitude}`,
+                location_url: locationUrl,
+              },
+              {
+                onConflict: "id",
+              }
+            );
 
         if (profileError) {
           console.log(
-            "Profile update error:",
+            "Profile save error:",
             profileError
           );
         }
       }
 
-      // SUCCESS MESSAGE
       setMessage(
         "✓ Registration successful! Please check your email and confirm your account before logging in."
       );
 
-      // CLEAR FORM
       setFullName("");
       setPhone("");
       setEmail("");
@@ -160,7 +164,7 @@ export default function RegisterPage() {
 
   return (
     <main className="auth-page">
-      <div className="auth-container">
+      <section className="auth-card">
 
         <h1>Trinity Family</h1>
 
@@ -212,6 +216,24 @@ export default function RegisterPage() {
             />
           </div>
 
+          {/* EMAIL */}
+          <div className="form-group">
+            <label htmlFor="email">
+              Email Address
+            </label>
+
+            <input
+              id="email"
+              type="email"
+              placeholder="example@gmail.com"
+              value={email}
+              onChange={(e) =>
+                setEmail(e.target.value)
+              }
+              required
+            />
+          </div>
+
           {/* DELIVERY LOCATION */}
           <div className="form-group">
 
@@ -235,38 +257,27 @@ export default function RegisterPage() {
 
             {latitude !== null &&
               longitude !== null && (
-                <a
-                  href={`https://www.google.com/maps?q=${latitude},${longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  View selected location on Google Maps
-                </a>
+                <div className="selected-location">
+
+                  <p>
+                    📍 Location captured
+                  </p>
+
+                  <a
+                    href={`https://www.google.com/maps?q=${latitude},${longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="map-link"
+                  >
+                    View Location on Google Maps
+                  </a>
+
+                </div>
               )}
-          </div>
-
-          {/* EMAIL */}
-          <div className="form-group">
-
-            <label htmlFor="email">
-              Email Address
-            </label>
-
-            <input
-              id="email"
-              type="email"
-              placeholder="example@gmail.com"
-              value={email}
-              onChange={(e) =>
-                setEmail(e.target.value)
-              }
-              required
-            />
           </div>
 
           {/* PASSWORD */}
           <div className="form-group">
-
             <label htmlFor="password">
               Create Password
             </label>
@@ -285,7 +296,6 @@ export default function RegisterPage() {
 
           {/* CONFIRM PASSWORD */}
           <div className="form-group">
-
             <label htmlFor="confirmPassword">
               Confirm Password
             </label>
@@ -324,10 +334,16 @@ export default function RegisterPage() {
 
         <p className="auth-link">
           Already have an account?{" "}
-          <a href="/login">Login</a>
+          <a href="/login">
+            Login
+          </a>
         </p>
 
-      </div>
+        <a href="/" className="back-shop-link">
+          ← Back to Shop
+        </a>
+
+      </section>
     </main>
   );
 }
