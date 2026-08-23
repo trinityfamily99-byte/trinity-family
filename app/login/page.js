@@ -44,13 +44,14 @@ export default function Login() {
     setResetLoading(true);
     setMessage("");
 
-    const { error } = await supabase.auth.resetPasswordForEmail(
-      email.trim(),
-      {
-        redirectTo:
-          "https://trinity-family.vercel.app/reset-password",
-      }
-    );
+    const { error } =
+      await supabase.auth.resetPasswordForEmail(
+        email.trim(),
+        {
+          redirectTo:
+            "https://trinity-family.vercel.app/reset-password",
+        }
+      );
 
     if (error) {
       setMessage(error.message);
@@ -67,18 +68,21 @@ export default function Login() {
 
   return (
     <main className="auth-page">
+
       <section className="auth-card">
 
         <h1>Trinity Family</h1>
 
         <h2>Login</h2>
 
-        <p>Login to continue shopping.</p>
+        <p className="auth-intro">
+          Login to continue shopping.
+        </p>
 
         <form onSubmit={handleLogin}>
 
           <label htmlFor="email">
-            Email
+            Email Address
           </label>
 
           <input
@@ -109,11 +113,10 @@ export default function Login() {
 
           <button
             type="submit"
+            className="login-submit-button"
             disabled={loading}
           >
-            {loading
-              ? "Logging in..."
-              : "Login"}
+            {loading ? "Logging in..." : "Login"}
           </button>
 
         </form>
@@ -142,11 +145,12 @@ export default function Login() {
           </a>
         </p>
 
-        <a href="/">
+        <a href="/" className="back-shop">
           ← Back to Shop
         </a>
 
       </section>
+
     </main>
   );
 }
