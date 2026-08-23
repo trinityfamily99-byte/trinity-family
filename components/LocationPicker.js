@@ -12,7 +12,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
 // --------------------------------------------------
-// LEAFLET MARKER ICON
+// LEAFLET MARKER
 // --------------------------------------------------
 
 const markerIcon = L.icon({
@@ -32,19 +32,26 @@ const markerIcon = L.icon({
 });
 
 // --------------------------------------------------
-// MOVE MAP TO NEW POSITION
+// FORCE MAP TO MOVE
 // --------------------------------------------------
 
-function ChangeMapCenter({ position }) {
+function MapController({ position }) {
   const map = useMap();
 
   useEffect(() => {
     if (!position) return;
 
-    map.setView(position, 16, {
-      animate: true,
-      duration: 1,
-    });
+    console.log("MOVING MAP TO:", position);
+
+    map.invalidateSize();
+
+    map.setView(
+      position,
+      16,
+      {
+        animate: true,
+      }
+    );
   }, [position, map]);
 
   return null;
@@ -54,86 +61,56 @@ function ChangeMapCenter({ position }) {
 // MAP CLICK
 // --------------------------------------------------
 
-function LocationMarker({
-  position,
+function MapClickHandler({
   setPosition,
   setLocationName,
-  updateParentLocation,
 }) {
   useMapEvents({
-    async click(e) {
+    click: async (e) => {
       const lat = e.latlng.lat;
       const lng = e.latlng.lng;
 
-      const newPosition = [lat, lng];
+      console.log(
+        "MAP CLICK:",
+        lat,
+        lng
+      );
 
-      setPosition(newPosition);
-      setLocationName("Getting address...");
-
-      // Immediately update parent coordinates
-      updateParentLocation(
+      setPosition([
         lat,
         lng,
+      ]);
+
+      setLocationName(
         "Getting address..."
       );
 
       try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-          {
-            headers: {
-              Accept: "application/json",
-            },
-          }
-        );
+        const response =
+          await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+          );
 
-        const result = await response.json();
+        const result =
+          await response.json();
 
-        const name =
+        setLocationName(
           result.display_name ||
-          `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-
-        setLocationName(name);
-
-        updateParentLocation(
-          lat,
-          lng,
-          name
+            `${lat.toFixed(6)}, ${lng.toFixed(6)}`
         );
-      } catch (error) {
-        console.error(
-          "Reverse location error:",
-          error
-        );
-
-        const fallback =
-          `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-
-        setLocationName(fallback);
-
-        updateParentLocation(
-          lat,
-          lng,
-          fallback
+      } catch {
+        setLocationName(
+          `${lat.toFixed(6)}, ${lng.toFixed(6)}`
         );
       }
     },
   });
 
-  if (!position) {
-    return null;
-  }
-
-  return (
-    <Marker
-      position={position}
-      icon={markerIcon}
-    />
-  );
+  return null;
 }
 
 // --------------------------------------------------
-// MAIN LOCATION PICKER
+// MAIN COMPONENT
 // --------------------------------------------------
 
 export default function LocationPicker({
@@ -141,14 +118,18 @@ export default function LocationPicker({
   longitude,
   onLocationChange,
 }) {
-  const [position, setPosition] = useState(
-    latitude !== null &&
-      longitude !== null
-      ? [latitude, longitude]
-      : null
-  );
 
-  const [search, setSearch] = useState("");
+  // Existing saved location
+  const [position, setPosition] =
+    useState(
+      latitude !== null &&
+      longitude !== null
+        ? [latitude, longitude]
+        : null
+    );
+
+  const [search, setSearch] =
+    useState("");
 
   const [searching, setSearching] =
     useState(false);
@@ -157,218 +138,197 @@ export default function LocationPicker({
     useState("");
 
   // --------------------------------------------------
-  // UPDATE REGISTER PAGE
+  // SEND LOCATION TO REGISTER PAGE
   // --------------------------------------------------
 
-  function updateParentLocation(
-    lat,
-    lng,
-    name
-  ) {
+  useEffect(() => {
+    if (!position) return;
+
+    const [lat, lng] =
+      position;
+
     onLocationChange({
       latitude: lat,
       longitude: lng,
 
-      locationName: name || "",
+      locationName:
+        locationName || "",
 
       locationUrl:
         `https://www.google.com/maps?q=${lat},${lng}`,
     });
-  }
+  }, [
+    position,
+    locationName,
+    onLocationChange,
+  ]);
 
   // --------------------------------------------------
-  // SEARCH LOCATION
+  // SEARCH
   // --------------------------------------------------
 
   async function searchLocation(e) {
     e.preventDefault();
 
-    const searchText = search.trim();
+    const query =
+      search.trim();
 
-    if (!searchText) {
-      return;
-    }
+    if (!query) return;
 
     setSearching(true);
 
     try {
-      let query = searchText;
 
-      if (
-        !searchText
-          .toLowerCase()
-          .includes("kenya")
-      ) {
-        query =
-          `${searchText}, Kenya`;
-      }
-
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&q=${encodeURIComponent(
-          query
-        )}`,
-        {
-          headers: {
-            Accept:
-              "application/json",
-          },
-        }
+      console.log(
+        "SEARCHING FOR:",
+        query
       );
+
+      const response =
+        await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=${encodeURIComponent(
+            query
+          )}`
+        );
 
       if (!response.ok) {
         throw new Error(
-          "Location search failed"
+          "Search request failed"
         );
       }
 
       const results =
         await response.json();
 
+      console.log(
+        "SEARCH RESULTS:",
+        results
+      );
+
       if (
         !results ||
         results.length === 0
       ) {
         alert(
-          "Location not found. Try a town, estate, street, landmark or nearby place."
+          "Location not found. Try a town, estate, street or landmark."
         );
 
+        setSearching(false);
         return;
       }
 
-      const result = results[0];
+      const result =
+        results[0];
 
       const lat =
-        Number(result.lat);
+        parseFloat(result.lat);
 
       const lng =
-        Number(result.lon);
+        parseFloat(result.lon);
 
       const name =
         result.display_name ||
-        searchText;
+        query;
 
-      // IMPORTANT:
-      // Update the React state.
-      setPosition([lat, lng]);
-
-      setLocationName(name);
-
-      // Show selected result in search box
-      setSearch(name);
-
-      // IMPORTANT:
-      // Send the NEW location to Register page.
-      updateParentLocation(
+      console.log(
+        "NEW LOCATION:",
         lat,
         lng,
         name
       );
 
+      // ------------------------------------------
+      // THIS IS THE IMPORTANT PART
+      // ------------------------------------------
+
+      setLocationName(name);
+
+      setPosition([
+        lat,
+        lng,
+      ]);
+
+      // Update search box
+      setSearch(query);
+
     } catch (error) {
+
       console.error(
-        "Location search error:",
+        "SEARCH ERROR:",
         error
       );
 
       alert(
-        "Unable to search for this location. Please try again."
+        "Unable to search for this location."
       );
+
     } finally {
+
       setSearching(false);
+
     }
   }
 
   // --------------------------------------------------
-  // CURRENT GPS LOCATION
+  // CURRENT LOCATION
   // --------------------------------------------------
 
   function useCurrentLocation() {
+
     if (!navigator.geolocation) {
       alert(
-        "Your browser does not support location services."
+        "Location services are not supported by your browser."
       );
-
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       async (location) => {
+
         const lat =
           location.coords.latitude;
 
         const lng =
           location.coords.longitude;
 
-        const newPosition = [
+        setPosition([
           lat,
           lng,
-        ];
-
-        setPosition(newPosition);
+        ]);
 
         setLocationName(
-          "Getting your address..."
-        );
-
-        updateParentLocation(
-          lat,
-          lng,
-          "Getting your address..."
+          "Getting address..."
         );
 
         try {
+
           const response =
             await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-              {
-                headers: {
-                  Accept:
-                    "application/json",
-                },
-              }
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
             );
 
           const result =
             await response.json();
 
-          const name =
+          setLocationName(
             result.display_name ||
-            `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-
-          setLocationName(name);
-
-          updateParentLocation(
-            lat,
-            lng,
-            name
+              `${lat.toFixed(6)}, ${lng.toFixed(6)}`
           );
 
-        } catch (error) {
-          console.error(
-            "Reverse geocoding error:",
-            error
-          );
-
-          const fallback =
-            `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        } catch {
 
           setLocationName(
-            fallback
-          );
-
-          updateParentLocation(
-            lat,
-            lng,
-            fallback
+            `${lat.toFixed(6)}, ${lng.toFixed(6)}`
           );
         }
       },
 
       (error) => {
+
         console.error(error);
 
         alert(
-          "Unable to get your current location. Please allow location access and try again."
+          "Unable to get your current location. Please allow location access."
         );
       },
 
@@ -381,10 +341,10 @@ export default function LocationPicker({
   }
 
   // --------------------------------------------------
-  // INITIAL MAP CENTER
+  // INITIAL MAP POSITION
   // --------------------------------------------------
 
-  const initialCenter =
+  const initialPosition =
     position || [
       -1.286389,
       36.817223,
@@ -400,15 +360,20 @@ export default function LocationPicker({
       {/* SEARCH */}
 
       <form
-        onSubmit={searchLocation}
+        onSubmit={
+          searchLocation
+        }
         className="location-search"
       >
+
         <input
           type="text"
           placeholder="Search town, estate, street or landmark..."
           value={search}
           onChange={(e) =>
-            setSearch(e.target.value)
+            setSearch(
+              e.target.value
+            )
           }
         />
 
@@ -420,6 +385,7 @@ export default function LocationPicker({
             ? "Searching..."
             : "🔍 Search"}
         </button>
+
       </form>
 
       {/* CURRENT LOCATION */}
@@ -437,46 +403,68 @@ export default function LocationPicker({
       {/* MAP */}
 
       <div className="location-map">
+
         <MapContainer
-          center={initialCenter}
-          zoom={position ? 16 : 6}
+          center={
+            initialPosition
+          }
+          zoom={
+            position
+              ? 16
+              : 6
+          }
           scrollWheelZoom={true}
           style={{
             width: "100%",
             height: "350px",
           }}
         >
+
           <TileLayer
             attribution="&copy; OpenStreetMap contributors"
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
-          {/* THIS MOVES THE ACTUAL LEAFLET MAP */}
+          {/* FORCE MAP MOVEMENT */}
 
-          <ChangeMapCenter
-            position={position}
+          <MapController
+            position={
+              position
+            }
           />
 
-          {/* PIN */}
+          {/* MAP CLICK */}
 
-          <LocationMarker
-            position={position}
+          <MapClickHandler
             setPosition={
               setPosition
             }
             setLocationName={
               setLocationName
             }
-            updateParentLocation={
-              updateParentLocation
-            }
           />
+
+          {/* PIN */}
+
+          {position && (
+            <Marker
+              position={
+                position
+              }
+              icon={
+                markerIcon
+              }
+            />
+          )}
+
         </MapContainer>
+
       </div>
 
       {/* SELECTED LOCATION */}
 
       {position && (
+
         <div className="selected-location">
 
           <p>
@@ -499,7 +487,9 @@ export default function LocationPicker({
           </p>
 
           <a
-            href={`https://www.google.com/maps?q=${position[0]},${position[1]}`}
+            href={
+              `https://www.google.com/maps?q=${position[0]},${position[1]}`
+            }
             target="_blank"
             rel="noopener noreferrer"
             className="google-maps-link"
@@ -508,6 +498,7 @@ export default function LocationPicker({
           </a>
 
         </div>
+
       )}
 
     </div>
