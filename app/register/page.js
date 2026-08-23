@@ -1,6 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
+import { supabase } from "../../lib/supabase";
+
+const LocationPicker = dynamic(
+  () => import("../../components/LocationPicker"),
+  {
+    ssr: false,
+    loading: () => (
+      <p>Loading map...</p>
+    ),
+  }
+);
 import { supabase } from "../../lib/supabase";
 import LocationPicker from "../../components/LocationPicker";
 
