@@ -32,6 +32,25 @@ const markerIcon = L.icon({
 });
 
 // --------------------------------------------------
+// MOVE MAP TO NEW POSITION
+// --------------------------------------------------
+
+function ChangeMapCenter({ position }) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!position) return;
+
+    map.setView(position, 16, {
+      animate: true,
+      duration: 1,
+    });
+  }, [position, map]);
+
+  return null;
+}
+
+// --------------------------------------------------
 // MAP CLICK
 // --------------------------------------------------
 
@@ -39,17 +58,24 @@ function LocationMarker({
   position,
   setPosition,
   setLocationName,
+  updateParentLocation,
 }) {
   useMapEvents({
     async click(e) {
       const lat = e.latlng.lat;
       const lng = e.latlng.lng;
 
-      // Replace previous location
-      setPosition([lat, lng]);
+      const newPosition = [lat, lng];
 
-      // Show temporary message
+      setPosition(newPosition);
       setLocationName("Getting address...");
+
+      // Immediately update parent coordinates
+      updateParentLocation(
+        lat,
+        lng,
+        "Getting address..."
+      );
 
       try {
         const response = await fetch(
@@ -61,15 +87,18 @@ function LocationMarker({
           }
         );
 
-        if (!response.ok) {
-          throw new Error("Reverse geocoding failed");
-        }
-
         const result = await response.json();
 
-        setLocationName(
+        const name =
           result.display_name ||
-            `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+          `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+        setLocationName(name);
+
+        updateParentLocation(
+          lat,
+          lng,
+          name
         );
       } catch (error) {
         console.error(
@@ -77,8 +106,15 @@ function LocationMarker({
           error
         );
 
-        setLocationName(
-          `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+        const fallback =
+          `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+        setLocationName(fallback);
+
+        updateParentLocation(
+          lat,
+          lng,
+          fallback
         );
       }
     },
@@ -97,26 +133,6 @@ function LocationMarker({
 }
 
 // --------------------------------------------------
-// MOVE MAP WHEN POSITION CHANGES
-// --------------------------------------------------
-
-function ChangeMapCenter({ position }) {
-  const map = useMap();
-
-  useEffect(() => {
-    if (!position) {
-      return;
-    }
-
-    map.flyTo(position, 16, {
-      duration: 1.2,
-    });
-  }, [position, map]);
-
-  return null;
-}
-
-// --------------------------------------------------
 // MAIN LOCATION PICKER
 // --------------------------------------------------
 
@@ -125,17 +141,14 @@ export default function LocationPicker({
   longitude,
   onLocationChange,
 }) {
-  // Initial position
-  const [position, setPosition] =
-    useState(
-      latitude !== null &&
-        longitude !== null
-        ? [latitude, longitude]
-        : null
-    );
+  const [position, setPosition] = useState(
+    latitude !== null &&
+      longitude !== null
+      ? [latitude, longitude]
+      : null
+  );
 
-  const [search, setSearch] =
-    useState("");
+  const [search, setSearch] = useState("");
 
   const [searching, setSearching] =
     useState(false);
@@ -144,31 +157,24 @@ export default function LocationPicker({
     useState("");
 
   // --------------------------------------------------
-  // KEEP PARENT PAGE UPDATED
+  // UPDATE REGISTER PAGE
   // --------------------------------------------------
 
-  useEffect(() => {
-    if (!position) {
-      return;
-    }
-
-    const [lat, lng] = position;
-
+  function updateParentLocation(
+    lat,
+    lng,
+    name
+  ) {
     onLocationChange({
       latitude: lat,
       longitude: lng,
 
-      locationName:
-        locationName || "",
+      locationName: name || "",
 
       locationUrl:
         `https://www.google.com/maps?q=${lat},${lng}`,
     });
-  }, [
-    position,
-    locationName,
-    onLocationChange,
-  ]);
+  }
 
   // --------------------------------------------------
   // SEARCH LOCATION
@@ -177,8 +183,7 @@ export default function LocationPicker({
   async function searchLocation(e) {
     e.preventDefault();
 
-    const searchText =
-      search.trim();
+    const searchText = search.trim();
 
     if (!searchText) {
       return;
@@ -187,28 +192,28 @@ export default function LocationPicker({
     setSearching(true);
 
     try {
-      // Always search specifically within Kenya
-      const query =
-        searchText
+      let query = searchText;
+
+      if (
+        !searchText
           .toLowerCase()
           .includes("kenya")
-          ? searchText
-          : `${searchText}, Kenya`;
+      ) {
+        query =
+          `${searchText}, Kenya`;
+      }
 
-      const url =
-        `https://nominatim.openstreetmap.org/search` +
-        `?format=json` +
-        `&limit=5` +
-        `&addressdetails=1` +
-        `&countrycodes=ke` +
-        `&q=${encodeURIComponent(query)}`;
-
-      const response = await fetch(url, {
-        headers: {
-          Accept:
-            "application/json",
-        },
-      });
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&q=${encodeURIComponent(
+          query
+        )}`,
+        {
+          headers: {
+            Accept:
+              "application/json",
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(
@@ -224,26 +229,13 @@ export default function LocationPicker({
         results.length === 0
       ) {
         alert(
-          "Location not found. Try a town, estate, street or landmark."
+          "Location not found. Try a town, estate, street, landmark or nearby place."
         );
 
         return;
       }
 
-      // Choose the first valid Kenyan result
-      const result = results.find(
-        (item) =>
-          item.lat &&
-          item.lon
-      );
-
-      if (!result) {
-        alert(
-          "Unable to determine that location. Please try another search."
-        );
-
-        return;
-      }
+      const result = results[0];
 
       const lat =
         Number(result.lat);
@@ -251,22 +243,25 @@ export default function LocationPicker({
       const lng =
         Number(result.lon);
 
-      // --------------------------------------------
-      // IMPORTANT:
-      // Completely replace previous location
-      // --------------------------------------------
+      const name =
+        result.display_name ||
+        searchText;
 
+      // IMPORTANT:
+      // Update the React state.
       setPosition([lat, lng]);
 
-      setLocationName(
-        result.display_name ||
-          searchText
-      );
+      setLocationName(name);
 
-      // Show the actual selected result
-      setSearch(
-        result.display_name ||
-          searchText
+      // Show selected result in search box
+      setSearch(name);
+
+      // IMPORTANT:
+      // Send the NEW location to Register page.
+      updateParentLocation(
+        lat,
+        lng,
+        name
       );
 
     } catch (error) {
@@ -284,7 +279,7 @@ export default function LocationPicker({
   }
 
   // --------------------------------------------------
-  // USE CURRENT GPS LOCATION
+  // CURRENT GPS LOCATION
   // --------------------------------------------------
 
   function useCurrentLocation() {
@@ -296,8 +291,6 @@ export default function LocationPicker({
       return;
     }
 
-    setSearching(true);
-
     navigator.geolocation.getCurrentPosition(
       async (location) => {
         const lat =
@@ -306,10 +299,20 @@ export default function LocationPicker({
         const lng =
           location.coords.longitude;
 
-        // Replace previous location
-        setPosition([lat, lng]);
+        const newPosition = [
+          lat,
+          lng,
+        ];
+
+        setPosition(newPosition);
 
         setLocationName(
+          "Getting your address..."
+        );
+
+        updateParentLocation(
+          lat,
+          lng,
           "Getting your address..."
         );
 
@@ -325,43 +328,44 @@ export default function LocationPicker({
               }
             );
 
-          if (!response.ok) {
-            throw new Error(
-              "Reverse geocoding failed"
-            );
-          }
-
           const result =
             await response.json();
 
-          setLocationName(
+          const name =
             result.display_name ||
-              `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+            `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
+          setLocationName(name);
+
+          updateParentLocation(
+            lat,
+            lng,
+            name
           );
 
-          setSearch(
-            result.display_name || ""
-          );
         } catch (error) {
           console.error(
             "Reverse geocoding error:",
             error
           );
 
+          const fallback =
+            `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+
           setLocationName(
-            `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+            fallback
           );
 
-          setSearch("");
-        } finally {
-          setSearching(false);
+          updateParentLocation(
+            lat,
+            lng,
+            fallback
+          );
         }
       },
 
       (error) => {
         console.error(error);
-
-        setSearching(false);
 
         alert(
           "Unable to get your current location. Please allow location access and try again."
@@ -377,10 +381,10 @@ export default function LocationPicker({
   }
 
   // --------------------------------------------------
-  // DEFAULT MAP CENTER
+  // INITIAL MAP CENTER
   // --------------------------------------------------
 
-  const mapCenter =
+  const initialCenter =
     position || [
       -1.286389,
       36.817223,
@@ -426,7 +430,6 @@ export default function LocationPicker({
           useCurrentLocation
         }
         className="current-location-button"
-        disabled={searching}
       >
         📍 Use My Current Location
       </button>
@@ -434,29 +437,27 @@ export default function LocationPicker({
       {/* MAP */}
 
       <div className="location-map">
-
         <MapContainer
-          center={mapCenter}
-          zoom={
-            position
-              ? 16
-              : 6
-          }
+          center={initialCenter}
+          zoom={position ? 16 : 6}
           scrollWheelZoom={true}
           style={{
             width: "100%",
             height: "350px",
           }}
         >
-
           <TileLayer
             attribution="&copy; OpenStreetMap contributors"
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
 
+          {/* THIS MOVES THE ACTUAL LEAFLET MAP */}
+
           <ChangeMapCenter
             position={position}
           />
+
+          {/* PIN */}
 
           <LocationMarker
             position={position}
@@ -466,10 +467,11 @@ export default function LocationPicker({
             setLocationName={
               setLocationName
             }
+            updateParentLocation={
+              updateParentLocation
+            }
           />
-
         </MapContainer>
-
       </div>
 
       {/* SELECTED LOCATION */}
