@@ -965,3 +965,45 @@ font-size: 17px;
     font-size: 19px;
   }
 }
+/* =========================
+   DELIVERY LOCATION
+========================= */
+
+.delivery-location-box {
+  width: 100%;
+  background: #f7f9fc;
+  border: 1px solid #d5dbe3;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.location-confirmed {
+  color: #17365d;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+.location-text {
+  color: #555;
+  margin-bottom: 12px;
+}
+
+.location-missing {
+  color: #c62828;
+  font-weight: bold;
+}
+
+.view-map-button {
+  display: inline-block;
+  background: #17365d;
+  color: white;
+  padding: 11px 16px;
+  border-radius: 6px;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.view-map-button:hover {
+  background: #0e2745;
+}
