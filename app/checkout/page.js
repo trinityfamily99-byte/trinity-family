@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
 
 export default function Checkout() {
+  const [loading, setLoading] = useState(true);
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -12,11 +13,10 @@ export default function Checkout() {
     additionalInfo: "",
   });
 
-  const [loading, setLoading] = useState(true);
-
-  // Load registered customer details
   useEffect(() => {
-    async function loadProfile() {
+    async function loadCustomerDetails() {
+      setLoading(true);
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -26,46 +26,46 @@ export default function Checkout() {
         return;
       }
 
-      const { data: profile } = await supabase
+      const { data: profile, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .maybeSingle();
 
-      if (profile) {
-        setForm({
-          name:
-            profile.full_name ||
-            profile.name ||
-            user.user_metadata?.full_name ||
-            "",
-
-          phone:
-            profile.phone ||
-            user.user_metadata?.phone ||
-            "",
-
-          email: user.email || "",
-
-          // THIS IS THE IMPORTANT PART
-          location:
-            profile.location ||
-            profile.delivery_location ||
-            "",
-
-          additionalInfo: "",
-        });
-      } else {
-        setForm((current) => ({
-          ...current,
-          email: user.email || "",
-        }));
+      if (error) {
+        console.error("Profile loading error:", error);
       }
+
+      setForm({
+        name:
+          profile?.full_name ||
+          profile?.name ||
+          user.user_metadata?.full_name ||
+          user.user_metadata?.name ||
+          "",
+
+        phone:
+          profile?.phone ||
+          profile?.phone_number ||
+          user.user_metadata?.phone ||
+          "",
+
+        email: user.email || "",
+
+        location:
+          profile?.delivery_location ||
+          profile?.location ||
+          user.user_metadata?.delivery_location ||
+          user.user_metadata?.location ||
+          "",
+
+        additionalInfo: "",
+      });
 
       setLoading(false);
     }
 
-    loadProfile();
+    loadCustomerDetails();
   }, []);
 
   const handleChange = (e) => {
@@ -89,7 +89,8 @@ export default function Checkout() {
     return (
       <main className="checkout-page">
         <section className="checkout-container">
-          <h2>Loading your details...</h2>
+          <h2>Loading Your Details...</h2>
+          <p>Please wait while we load your registered information.</p>
         </section>
       </main>
     );
@@ -97,11 +98,6 @@ export default function Checkout() {
 
   return (
     <main className="checkout-page">
-
-      <header className="checkout-header">
-        <h1>Trinity Family</h1>
-        <p>Checkout</p>
-      </header>
 
       <section className="checkout-container">
 
@@ -114,64 +110,72 @@ export default function Checkout() {
 
         <form onSubmit={handleSubmit}>
 
-          <label>
+          <label htmlFor="name">
             Full Name
           </label>
 
           <input
+            id="name"
             type="text"
             name="name"
             value={form.name}
             onChange={handleChange}
+            placeholder="Enter your full name"
             required
           />
 
-          <label>
+          <label htmlFor="phone">
             Phone Number
           </label>
 
           <input
+            id="phone"
             type="tel"
             name="phone"
             value={form.phone}
             onChange={handleChange}
+            placeholder="e.g. 0727 757 996"
             required
           />
 
-          <label>
+          <label htmlFor="email">
             Email Address
           </label>
 
           <input
+            id="email"
             type="email"
             name="email"
             value={form.email}
             readOnly
+            className="readonly-input"
           />
 
-          <label>
+          <label htmlFor="location">
             Delivery Location
           </label>
 
           <input
+            id="location"
             type="text"
             name="location"
-            placeholder="Your saved delivery location"
             value={form.location}
             onChange={handleChange}
+            placeholder="Your saved delivery location"
             required
           />
 
-          <label>
+          <label htmlFor="additionalInfo">
             Additional Information
           </label>
 
           <textarea
+            id="additionalInfo"
             name="additionalInfo"
             placeholder="Anything else you would like us to know? (Optional)"
             value={form.additionalInfo}
             onChange={handleChange}
-            rows="4"
+            rows="5"
           />
 
           <button
