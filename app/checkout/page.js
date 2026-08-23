@@ -9,57 +9,63 @@ export default function Checkout() {
     phone: "",
     email: "",
     location: "",
-    additional_information: "",
+    additionalInfo: "",
   });
 
   const [loading, setLoading] = useState(true);
 
   // Load registered customer details
   useEffect(() => {
-    async function loadCustomerDetails() {
-      setLoading(true);
-
+    async function loadProfile() {
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
       if (!user) {
-        window.location.href = "/login";
+        setLoading(false);
         return;
       }
 
-      // Get profile details from Supabase
-      const { data: profile, error } = await supabase
+      const { data: profile } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
         .maybeSingle();
 
-      if (error) {
-        console.error("Profile loading error:", error);
-      }
+      if (profile) {
+        setForm({
+          name:
+            profile.full_name ||
+            profile.name ||
+            user.user_metadata?.full_name ||
+            "",
 
-      setForm({
-        name:
-          profile?.full_name ||
-          profile?.name ||
-          user.user_metadata?.full_name ||
-          "",
-        phone:
-          profile?.phone ||
-          user.user_metadata?.phone ||
-          "",
-        email: user.email || "",
-        location:
-          profile?.location ||
-          "",
-        additional_information: "",
-      });
+          phone:
+            profile.phone ||
+            user.user_metadata?.phone ||
+            "",
+
+          email: user.email || "",
+
+          // THIS IS THE IMPORTANT PART
+          location:
+            profile.location ||
+            profile.delivery_location ||
+            "",
+
+          additionalInfo: "",
+        });
+      } else {
+        setForm((current) => ({
+          ...current,
+          email: user.email || "",
+        }));
+      }
 
       setLoading(false);
     }
 
-    loadCustomerDetails();
+    loadProfile();
   }, []);
 
   const handleChange = (e) => {
@@ -108,56 +114,46 @@ export default function Checkout() {
 
         <form onSubmit={handleSubmit}>
 
-          {/* FULL NAME */}
-          <label htmlFor="name">
+          <label>
             Full Name
           </label>
 
           <input
-            id="name"
             type="text"
             name="name"
-            placeholder="Your full name"
             value={form.name}
             onChange={handleChange}
             required
           />
 
-          {/* PHONE */}
-          <label htmlFor="phone">
+          <label>
             Phone Number
           </label>
 
           <input
-            id="phone"
             type="tel"
             name="phone"
-            placeholder="Your phone number"
             value={form.phone}
             onChange={handleChange}
             required
           />
 
-          {/* EMAIL */}
-          <label htmlFor="email">
+          <label>
             Email Address
           </label>
 
           <input
-            id="email"
             type="email"
             name="email"
             value={form.email}
             readOnly
           />
 
-          {/* DELIVERY LOCATION */}
-          <label htmlFor="location">
+          <label>
             Delivery Location
           </label>
 
           <input
-            id="location"
             type="text"
             name="location"
             placeholder="Your saved delivery location"
@@ -166,21 +162,18 @@ export default function Checkout() {
             required
           />
 
-          {/* ADDITIONAL INFORMATION */}
-          <label htmlFor="additional_information">
+          <label>
             Additional Information
           </label>
 
           <textarea
-            id="additional_information"
-            name="additional_information"
+            name="additionalInfo"
             placeholder="Anything else you would like us to know? (Optional)"
-            value={form.additional_information}
+            value={form.additionalInfo}
             onChange={handleChange}
             rows="4"
           />
 
-          {/* PLACE ORDER */}
           <button
             type="submit"
             className="place-order-button"
