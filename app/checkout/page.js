@@ -5,6 +5,7 @@ import { supabase } from "../../lib/supabase";
 
 export default function Checkout() {
   const [loading, setLoading] = useState(true);
+
   const [form, setForm] = useState({
     name: "",
     phone: "",
@@ -12,6 +13,10 @@ export default function Checkout() {
     location: "",
     additionalInfo: "",
   });
+
+  const [latitude, setLatitude] = useState(null);
+  const [longitude, setLongitude] = useState(null);
+  const [locationUrl, setLocationUrl] = useState("");
 
   useEffect(() => {
     async function loadCustomerDetails() {
@@ -36,6 +41,38 @@ export default function Checkout() {
         console.error("Profile loading error:", error);
       }
 
+      // Get saved GPS coordinates
+      const savedLatitude =
+        profile?.latitude ??
+        user.user_metadata?.latitude ??
+        null;
+
+      const savedLongitude =
+        profile?.longitude ??
+        user.user_metadata?.longitude ??
+        null;
+
+      setLatitude(savedLatitude);
+      setLongitude(savedLongitude);
+
+      // Create Google Maps location link
+      if (
+        savedLatitude !== null &&
+        savedLongitude !== null
+      ) {
+        setLocationUrl(
+          `https://www.google.com/maps?q=${savedLatitude},${savedLongitude}`
+        );
+      } else if (
+        profile?.location_url ||
+        user.user_metadata?.location_url
+      ) {
+        setLocationUrl(
+          profile?.location_url ||
+          user.user_metadata?.location_url
+        );
+      }
+
       setForm({
         name:
           profile?.full_name ||
@@ -53,10 +90,10 @@ export default function Checkout() {
         email: user.email || "",
 
         location:
-          profile?.delivery_location ||
           profile?.location ||
-          user.user_metadata?.delivery_location ||
+          profile?.delivery_location ||
           user.user_metadata?.location ||
+          user.user_metadata?.delivery_location ||
           "",
 
         additionalInfo: "",
@@ -78,11 +115,18 @@ export default function Checkout() {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    const orderData = {
+      ...form,
+      latitude,
+      longitude,
+      location_url: locationUrl,
+    };
+
     alert(
       "Order received! We will contact you to confirm your order."
     );
 
-    console.log("Customer Order:", form);
+    console.log("Customer Order:", orderData);
   };
 
   if (loading) {
@@ -90,7 +134,11 @@ export default function Checkout() {
       <main className="checkout-page">
         <section className="checkout-container">
           <h2>Loading Your Details...</h2>
-          <p>Please wait while we load your registered information.</p>
+
+          <p>
+            Please wait while we load your registered
+            information.
+          </p>
         </section>
       </main>
     );
@@ -98,17 +146,19 @@ export default function Checkout() {
 
   return (
     <main className="checkout-page">
-
       <section className="checkout-container">
 
         <h2>Complete Your Order</h2>
 
         <p className="checkout-intro">
-          Your registered details have been loaded automatically.
-          Please confirm them before placing your order.
+          Your registered details have been loaded
+          automatically. Please confirm them before
+          placing your order.
         </p>
 
         <form onSubmit={handleSubmit}>
+
+          {/* FULL NAME */}
 
           <label htmlFor="name">
             Full Name
@@ -124,6 +174,8 @@ export default function Checkout() {
             required
           />
 
+          {/* PHONE */}
+
           <label htmlFor="phone">
             Phone Number
           </label>
@@ -138,6 +190,8 @@ export default function Checkout() {
             required
           />
 
+          {/* EMAIL */}
+
           <label htmlFor="email">
             Email Address
           </label>
@@ -151,19 +205,56 @@ export default function Checkout() {
             className="readonly-input"
           />
 
-          <label htmlFor="location">
+          {/* DELIVERY LOCATION */}
+
+          <label>
             Delivery Location
           </label>
 
-          <input
-            id="location"
-            type="text"
-            name="location"
-            value={form.location}
-            onChange={handleChange}
-            placeholder="Your saved delivery location"
-            required
-          />
+          <div className="delivery-location-box">
+
+            {latitude !== null &&
+            longitude !== null ? (
+              <>
+                <div className="location-confirmed">
+                  📍 Delivery location saved
+                </div>
+
+                <a
+                  href={locationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="view-map-button"
+                >
+                  🗺️ View Delivery Location on Google Maps
+                </a>
+              </>
+            ) : form.location ? (
+              <>
+                <div className="location-text">
+                  {form.location}
+                </div>
+
+                {locationUrl && (
+                  <a
+                    href={locationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="view-map-button"
+                  >
+                    🗺️ View Delivery Location on Google Maps
+                  </a>
+                )}
+              </>
+            ) : (
+              <div className="location-missing">
+                ⚠️ No delivery location has been saved.
+              </div>
+            )}
+
+          </div>
+
+          {/* ADDITIONAL INFORMATION */}
 
           <label htmlFor="additionalInfo">
             Additional Information
@@ -178,6 +269,8 @@ export default function Checkout() {
             rows="5"
           />
 
+          {/* PLACE ORDER */}
+
           <button
             type="submit"
             className="place-order-button"
@@ -187,12 +280,14 @@ export default function Checkout() {
 
         </form>
 
-        <a href="/cart" className="back-cart">
+        <a
+          href="/cart"
+          className="back-cart"
+        >
           ← Back to Cart
         </a>
 
       </section>
-
     </main>
   );
 }
