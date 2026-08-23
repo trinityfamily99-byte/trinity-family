@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
+import LocationPicker from "../../components/LocationPicker";
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
@@ -12,47 +13,17 @@ export default function RegisterPage() {
 
   const [latitude, setLatitude] = useState(null);
   const [longitude, setLongitude] = useState(null);
+  const [locationName, setLocationName] = useState("");
+  const [locationUrl, setLocationUrl] = useState("");
 
-  const [locationStatus, setLocationStatus] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function getLocation() {
-    setLocationStatus("Getting your location...");
-    setMessage("");
-
-    if (!navigator.geolocation) {
-      setLocationStatus(
-        "Your browser does not support location services."
-      );
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-
-        setLatitude(lat);
-        setLongitude(lng);
-
-        setLocationStatus(
-          "✓ Your delivery location has been captured successfully."
-        );
-      },
-      (error) => {
-        console.log(error);
-
-        setLocationStatus(
-          "Unable to get your location. Please allow location access and try again."
-        );
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15000,
-        maximumAge: 0,
-      }
-    );
+  function handleLocationChange(location) {
+    setLatitude(location.latitude);
+    setLongitude(location.longitude);
+    setLocationName(location.locationName || "");
+    setLocationUrl(location.locationUrl || "");
   }
 
   async function handleRegister(e) {
@@ -74,9 +45,12 @@ export default function RegisterPage() {
       return;
     }
 
-    if (latitude === null || longitude === null) {
+    if (
+      latitude === null ||
+      longitude === null
+    ) {
       setMessage(
-        "Please capture your delivery location before creating your account."
+        "Please select your delivery location on the map before creating your account."
       );
       return;
     }
@@ -84,10 +58,15 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const locationUrl =
+      const finalLocationUrl =
+        locationUrl ||
         `https://www.google.com/maps?q=${latitude},${longitude}`;
 
-      // Create account
+      const finalLocation =
+        locationName ||
+        `${latitude}, ${longitude}`;
+
+      // CREATE ACCOUNT
       const { data, error } =
         await supabase.auth.signUp({
           email: email.trim(),
@@ -97,10 +76,13 @@ export default function RegisterPage() {
             data: {
               full_name: fullName.trim(),
               phone: phone.trim(),
+
               latitude: latitude,
               longitude: longitude,
-              location: `${latitude}, ${longitude}`,
-              location_url: locationUrl,
+
+              location: finalLocation,
+              location_name: finalLocation,
+              location_url: finalLocationUrl,
             },
           },
         });
@@ -111,7 +93,7 @@ export default function RegisterPage() {
         return;
       }
 
-      // Save customer details to profile
+      // SAVE CUSTOMER PROFILE
       if (data.user) {
         const { error: profileError } =
           await supabase
@@ -119,12 +101,18 @@ export default function RegisterPage() {
             .upsert(
               {
                 id: data.user.id,
+
                 name: fullName.trim(),
+                full_name: fullName.trim(),
+
                 phone: phone.trim(),
+
                 latitude: latitude,
                 longitude: longitude,
-                location: `${latitude}, ${longitude}`,
-                location_url: locationUrl,
+
+                location: finalLocation,
+                location_name: finalLocation,
+                location_url: finalLocationUrl,
               },
               {
                 onConflict: "id",
@@ -132,7 +120,7 @@ export default function RegisterPage() {
             );
 
         if (profileError) {
-          console.log(
+          console.error(
             "Profile save error:",
             profileError
           );
@@ -143,16 +131,20 @@ export default function RegisterPage() {
         "✓ Registration successful! Please check your email and confirm your account before logging in."
       );
 
+      // CLEAR FORM
       setFullName("");
       setPhone("");
       setEmail("");
       setPassword("");
       setConfirmPassword("");
+
       setLatitude(null);
       setLongitude(null);
-      setLocationStatus("");
+      setLocationName("");
+      setLocationUrl("");
+
     } catch (error) {
-      console.log(error);
+      console.error(error);
 
       setMessage(
         "Something went wrong. Please try again."
@@ -164,6 +156,7 @@ export default function RegisterPage() {
 
   return (
     <main className="auth-page">
+
       <section className="auth-card">
 
         <h1>Trinity Family</h1>
@@ -181,7 +174,9 @@ export default function RegisterPage() {
         >
 
           {/* FULL NAME */}
+
           <div className="form-group">
+
             <label htmlFor="fullName">
               Full Name
             </label>
@@ -196,10 +191,13 @@ export default function RegisterPage() {
               }
               required
             />
+
           </div>
 
           {/* PHONE */}
+
           <div className="form-group">
+
             <label htmlFor="phone">
               Phone Number
             </label>
@@ -214,10 +212,13 @@ export default function RegisterPage() {
               }
               required
             />
+
           </div>
 
           {/* EMAIL */}
+
           <div className="form-group">
+
             <label htmlFor="email">
               Email Address
             </label>
@@ -232,52 +233,37 @@ export default function RegisterPage() {
               }
               required
             />
+
           </div>
 
           {/* DELIVERY LOCATION */}
+
           <div className="form-group">
 
             <label>
               Delivery Location
             </label>
 
-            <button
-              type="button"
-              onClick={getLocation}
-              className="location-button"
-            >
-              📍 Use My Current Location
-            </button>
+            <p className="location-help">
+              Search for the place where you want
+              your orders delivered, then select
+              the exact location on the map.
+            </p>
 
-            {locationStatus && (
-              <p className="location-status">
-                {locationStatus}
-              </p>
-            )}
+            <LocationPicker
+              latitude={latitude}
+              longitude={longitude}
+              onLocationChange={
+                handleLocationChange
+              }
+            />
 
-            {latitude !== null &&
-              longitude !== null && (
-                <div className="selected-location">
-
-                  <p>
-                    📍 Location captured
-                  </p>
-
-                  <a
-                    href={`https://www.google.com/maps?q=${latitude},${longitude}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="map-link"
-                  >
-                    View Location on Google Maps
-                  </a>
-
-                </div>
-              )}
           </div>
 
           {/* PASSWORD */}
+
           <div className="form-group">
+
             <label htmlFor="password">
               Create Password
             </label>
@@ -292,10 +278,13 @@ export default function RegisterPage() {
               }
               required
             />
+
           </div>
 
           {/* CONFIRM PASSWORD */}
+
           <div className="form-group">
+
             <label htmlFor="confirmPassword">
               Confirm Password
             </label>
@@ -310,9 +299,11 @@ export default function RegisterPage() {
               }
               required
             />
+
           </div>
 
           {/* MESSAGE */}
+
           {message && (
             <p className="auth-message">
               {message}
@@ -320,6 +311,7 @@ export default function RegisterPage() {
           )}
 
           {/* CREATE ACCOUNT */}
+
           <button
             type="submit"
             className="auth-button"
@@ -339,11 +331,15 @@ export default function RegisterPage() {
           </a>
         </p>
 
-        <a href="/" className="back-shop-link">
+        <a
+          href="/"
+          className="back-shop-link"
+        >
           ← Back to Shop
         </a>
 
       </section>
+
     </main>
   );
 }
