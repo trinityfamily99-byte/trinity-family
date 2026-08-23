@@ -9,8 +9,10 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.57.0",
+    "leaflet": "^1.9.4",
     "next": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "react-leaflet": "^5.0.0"
   }
 }
