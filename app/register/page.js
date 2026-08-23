@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { supabase } from "../../lib/supabase";
 
@@ -13,8 +13,6 @@ const LocationPicker = dynamic(
     ),
   }
 );
-import { supabase } from "../../lib/supabase";
-import LocationPicker from "../../components/LocationPicker";
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
@@ -31,12 +29,12 @@ export default function RegisterPage() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
-  function handleLocationChange(location) {
+  const handleLocationChange = useCallback((location) => {
     setLatitude(location.latitude);
     setLongitude(location.longitude);
     setLocationName(location.locationName || "");
     setLocationUrl(location.locationUrl || "");
-  }
+  }, []);
 
   async function handleRegister(e) {
     e.preventDefault();
@@ -78,7 +76,6 @@ export default function RegisterPage() {
         locationName ||
         `${latitude}, ${longitude}`;
 
-      // CREATE ACCOUNT
       const { data, error } =
         await supabase.auth.signUp({
           email: email.trim(),
@@ -89,8 +86,8 @@ export default function RegisterPage() {
               full_name: fullName.trim(),
               phone: phone.trim(),
 
-              latitude: latitude,
-              longitude: longitude,
+              latitude,
+              longitude,
 
               location: finalLocation,
               location_name: finalLocation,
@@ -105,7 +102,6 @@ export default function RegisterPage() {
         return;
       }
 
-      // SAVE CUSTOMER PROFILE
       if (data.user) {
         const { error: profileError } =
           await supabase
@@ -119,8 +115,8 @@ export default function RegisterPage() {
 
                 phone: phone.trim(),
 
-                latitude: latitude,
-                longitude: longitude,
+                latitude,
+                longitude,
 
                 location: finalLocation,
                 location_name: finalLocation,
@@ -143,7 +139,6 @@ export default function RegisterPage() {
         "✓ Registration successful! Please check your email and confirm your account before logging in."
       );
 
-      // CLEAR FORM
       setFullName("");
       setPhone("");
       setEmail("");
@@ -185,10 +180,7 @@ export default function RegisterPage() {
           className="auth-form"
         >
 
-          {/* FULL NAME */}
-
           <div className="form-group">
-
             <label htmlFor="fullName">
               Full Name
             </label>
@@ -203,13 +195,9 @@ export default function RegisterPage() {
               }
               required
             />
-
           </div>
 
-          {/* PHONE */}
-
           <div className="form-group">
-
             <label htmlFor="phone">
               Phone Number
             </label>
@@ -224,13 +212,9 @@ export default function RegisterPage() {
               }
               required
             />
-
           </div>
 
-          {/* EMAIL */}
-
           <div className="form-group">
-
             <label htmlFor="email">
               Email Address
             </label>
@@ -245,10 +229,7 @@ export default function RegisterPage() {
               }
               required
             />
-
           </div>
-
-          {/* DELIVERY LOCATION */}
 
           <div className="form-group">
 
@@ -258,7 +239,7 @@ export default function RegisterPage() {
 
             <p className="location-help">
               Search for the place where you want
-              your orders delivered, then select
+              your order delivered, then select
               the exact location on the map.
             </p>
 
@@ -272,10 +253,7 @@ export default function RegisterPage() {
 
           </div>
 
-          {/* PASSWORD */}
-
           <div className="form-group">
-
             <label htmlFor="password">
               Create Password
             </label>
@@ -290,13 +268,9 @@ export default function RegisterPage() {
               }
               required
             />
-
           </div>
 
-          {/* CONFIRM PASSWORD */}
-
           <div className="form-group">
-
             <label htmlFor="confirmPassword">
               Confirm Password
             </label>
@@ -311,18 +285,13 @@ export default function RegisterPage() {
               }
               required
             />
-
           </div>
-
-          {/* MESSAGE */}
 
           {message && (
             <p className="auth-message">
               {message}
             </p>
           )}
-
-          {/* CREATE ACCOUNT */}
 
           <button
             type="submit"
