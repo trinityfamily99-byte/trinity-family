@@ -39,7 +39,6 @@ export default function Home() {
 
     loadUser();
 
-    // Listen for login/logout changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
@@ -68,7 +67,7 @@ export default function Home() {
     };
   }, []);
 
-  // Load products from Supabase
+  // Load products
   useEffect(() => {
     async function loadProducts() {
       const { data, error } = await supabase
@@ -100,7 +99,7 @@ export default function Home() {
     }
   }, []);
 
-  // Save cart whenever it changes
+  // Save cart
   useEffect(() => {
     localStorage.setItem(
       "trinity-cart",
@@ -142,18 +141,15 @@ export default function Home() {
     window.location.href = "/";
   }
 
-  // Number of products in cart
   const cartCount = cart.reduce(
     (total, item) => total + item.quantity,
     0
   );
 
-  // Open menu section
   function openMenuSection(section) {
     setMenuSection(section);
   }
 
-  // Close menu
   function closeMenu() {
     setMenuOpen(false);
     setMenuSection(null);
@@ -297,6 +293,8 @@ export default function Home() {
             {!menuSection && (
               <div className="menu-options">
 
+                {/* PROFILE */}
+
                 <button
                   type="button"
                   onClick={() =>
@@ -307,6 +305,7 @@ export default function Home() {
 
                   <div>
                     <strong>Profile</strong>
+
                     <small>
                       View your registered details
                     </small>
@@ -315,6 +314,8 @@ export default function Home() {
                   <span>›</span>
                 </button>
 
+
+                {/* SETTINGS */}
 
                 <button
                   type="button"
@@ -326,6 +327,7 @@ export default function Home() {
 
                   <div>
                     <strong>Settings</strong>
+
                     <small>
                       Account and site settings
                     </small>
@@ -334,6 +336,8 @@ export default function Home() {
                   <span>›</span>
                 </button>
 
+
+                {/* CONTACT */}
 
                 <button
                   type="button"
@@ -345,6 +349,7 @@ export default function Home() {
 
                   <div>
                     <strong>Contact Us</strong>
+
                     <small>
                       Get in touch with Trinity Family
                     </small>
@@ -353,6 +358,8 @@ export default function Home() {
                   <span>›</span>
                 </button>
 
+
+                {/* LANGUAGE */}
 
                 <button
                   type="button"
@@ -364,6 +371,7 @@ export default function Home() {
 
                   <div>
                     <strong>Language</strong>
+
                     <small>
                       {language}
                     </small>
@@ -396,6 +404,28 @@ export default function Home() {
                 </a>
 
 
+                {/* MY ORDERS */}
+
+                {user && (
+                  <a
+                    href="/orders"
+                    className="menu-orders-link"
+                  >
+                    <span>📦</span>
+
+                    <div>
+                      <strong>My Orders</strong>
+
+                      <small>
+                        View your previous orders
+                      </small>
+                    </div>
+
+                    <span>›</span>
+                  </a>
+                )}
+
+
                 {/* LOGIN / REGISTER / LOGOUT */}
 
                 {user ? (
@@ -408,6 +438,7 @@ export default function Home() {
 
                     <div>
                       <strong>Logout</strong>
+
                       <small>
                         Sign out of your account
                       </small>
@@ -425,6 +456,7 @@ export default function Home() {
 
                       <div>
                         <strong>Login</strong>
+
                         <small>
                           Sign in to your account
                         </small>
@@ -441,6 +473,7 @@ export default function Home() {
 
                       <div>
                         <strong>Create Account</strong>
+
                         <small>
                           Register with Trinity Family
                         </small>
@@ -477,6 +510,7 @@ export default function Home() {
 
                     <div>
                       <strong>Full Name</strong>
+
                       <p>
                         {profile?.full_name ||
                           profile?.name ||
@@ -488,6 +522,7 @@ export default function Home() {
 
                     <div>
                       <strong>Phone</strong>
+
                       <p>
                         {profile?.phone ||
                           profile?.phone_number ||
@@ -498,6 +533,7 @@ export default function Home() {
 
                     <div>
                       <strong>Email</strong>
+
                       <p>
                         {user.email ||
                           "Not available"}
@@ -540,6 +576,7 @@ export default function Home() {
                             📍 View on Google Maps
                           </a>
                         )}
+
                     </div>
 
                   </div>
@@ -592,6 +629,7 @@ export default function Home() {
                 <div className="settings-list">
 
                   <div className="setting-item">
+
                     <div>
                       <strong>
                         Account
@@ -608,10 +646,12 @@ export default function Home() {
                     ) : (
                       <span>—</span>
                     )}
+
                   </div>
 
 
                   <div className="setting-item">
+
                     <div>
                       <strong>
                         Delivery Details
@@ -624,10 +664,12 @@ export default function Home() {
                     </div>
 
                     <span>📍</span>
+
                   </div>
 
 
                   <div className="setting-item">
+
                     <div>
                       <strong>
                         Language
@@ -639,6 +681,7 @@ export default function Home() {
                     </div>
 
                     <span>🌐</span>
+
                   </div>
 
                 </div>
@@ -837,8 +880,6 @@ export default function Home() {
               key={product.Name}
             >
 
-              {/* PRODUCT IMAGE */}
-
               <div
                 className="product-image"
                 onClick={() => {
@@ -867,9 +908,6 @@ export default function Home() {
                 )}
 
               </div>
-
-
-              {/* PRODUCT DETAILS */}
 
               <h3>{product.Name}</h3>
 
