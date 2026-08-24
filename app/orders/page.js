@@ -22,9 +22,7 @@ export default function OrdersPage() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        setMessage(
-          "Please log in to view your orders."
-        );
+        setMessage("Please log in to view your orders.");
         setLoading(false);
         return;
       }
@@ -38,10 +36,7 @@ export default function OrdersPage() {
         });
 
       if (error) {
-        console.error(
-          "Orders loading error:",
-          error
-        );
+        console.error("Orders loading error:", error);
 
         setMessage(
           "Unable to load your orders. Please try again."
@@ -64,7 +59,13 @@ export default function OrdersPage() {
   }
 
   function formatDate(date) {
-    return new Date(date).toLocaleString();
+    return new Date(date).toLocaleString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   }
 
   function getStatusClass(status) {
@@ -86,13 +87,44 @@ export default function OrdersPage() {
     }
   }
 
+  function formatStatus(status) {
+    if (!status) return "Pending";
+
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  }
+
+  /*
+   * Get the most recent saved delivery location.
+   * This prevents the same address from being printed
+   * repeatedly for every order.
+   */
+  const latestOrder = orders.length > 0 ? orders[0] : null;
+
+  const deliveryLocation =
+    latestOrder?.location || "";
+
+  const deliveryLocationUrl =
+    latestOrder?.location_url ||
+    (latestOrder?.latitude !== null &&
+    latestOrder?.longitude !== null
+      ? `https://www.google.com/maps?q=${latestOrder.latitude},${latestOrder.longitude}`
+      : "");
+
   if (loading) {
     return (
       <main className="orders-page">
         <section className="orders-container">
-          <h1>📦 My Orders</h1>
+          <div className="orders-loading">
+            <div className="orders-loading-icon">
+              📦
+            </div>
 
-          <p>Loading your orders...</p>
+            <h1>Loading Your Orders</h1>
+
+            <p>
+              Please wait while we retrieve your orders.
+            </p>
+          </div>
         </section>
       </main>
     );
@@ -100,18 +132,27 @@ export default function OrdersPage() {
 
   return (
     <main className="orders-page">
-
       <section className="orders-container">
+
+        {/* PAGE HEADER */}
 
         <div className="orders-header">
 
-          <div>
-            <h1>📦 My Orders</h1>
+          <div className="orders-title-area">
 
-            <p>
-              View your previous orders and
-              delivery details.
-            </p>
+            <div className="orders-title-icon">
+              📦
+            </div>
+
+            <div>
+              <h1>My Orders</h1>
+
+              <p>
+                View your previous orders and
+                delivery details.
+              </p>
+            </div>
+
           </div>
 
           <a
@@ -123,28 +164,48 @@ export default function OrdersPage() {
 
         </div>
 
+
+        {/* ERROR / MESSAGE */}
+
         {message && (
           <div className="orders-message">
-            {message}
 
-            {!message.includes("log in") && (
-              <button
-                onClick={loadOrders}
-                className="retry-orders-button"
-              >
-                Try Again
-              </button>
-            )}
+            <div className="orders-message-icon">
+              ⚠️
+            </div>
+
+            <div>
+              <p>{message}</p>
+
+              {!message.includes("log in") && (
+                <button
+                  onClick={loadOrders}
+                  className="retry-orders-button"
+                >
+                  Try Again
+                </button>
+              )}
+            </div>
+
           </div>
         )}
 
+
+        {/* EMPTY ORDERS */}
+
         {!message && orders.length === 0 && (
           <div className="empty-orders">
+
+            <div className="empty-orders-icon">
+              📦
+            </div>
 
             <h2>No Orders Yet</h2>
 
             <p>
               You haven't placed any orders yet.
+              Your orders will appear here after
+              you complete a purchase.
             </p>
 
             <a
@@ -157,181 +218,261 @@ export default function OrdersPage() {
           </div>
         )}
 
-        {!message &&
-          orders.length > 0 && (
+
+        {/* DELIVERY LOCATION */}
+
+        {!message && orders.length > 0 && (
+          <>
+
+            {deliveryLocation && (
+              <div className="saved-delivery-card">
+
+                <div className="saved-delivery-icon">
+                  📍
+                </div>
+
+                <div className="saved-delivery-content">
+
+                  <span className="saved-delivery-label">
+                    SAVED DELIVERY LOCATION
+                  </span>
+
+                  <p>
+                    {deliveryLocation}
+                  </p>
+
+                </div>
+
+                {deliveryLocationUrl && (
+                  <a
+                    href={deliveryLocationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="saved-location-button"
+                  >
+                    🗺️ View Map
+                  </a>
+                )}
+
+              </div>
+            )}
+
+
+            {/* ORDERS */}
+
+            <div className="orders-section-title">
+
+              <div>
+                <h2>Order History</h2>
+
+                <p>
+                  {orders.length} order
+                  {orders.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+
+            </div>
+
+
             <div className="orders-list">
 
-              {orders.map((order) => (
+              {orders.map((order) => {
 
-                <article
-                  key={order.id}
-                  className="order-card"
-                >
+                const orderMapUrl =
+                  order.location_url ||
+                  (order.latitude !== null &&
+                  order.longitude !== null
+                    ? `https://www.google.com/maps?q=${order.latitude},${order.longitude}`
+                    : deliveryLocationUrl);
 
-                  {/* ORDER HEADER */}
+                return (
+                  <article
+                    key={order.id}
+                    className="order-card"
+                  >
 
-                  <div className="order-card-header">
+                    {/* ORDER TOP */}
 
-                    <div>
-                      <h2>
-                        Order #
-                        {order.id
-                          ? order.id
-                              .substring(0, 8)
-                              .toUpperCase()
-                          : "N/A"}
-                      </h2>
+                    <div className="order-card-header">
 
-                      <p>
-                        {formatDate(
-                          order.created_at
+                      <div className="order-number-area">
+
+                        <span className="order-small-label">
+                          ORDER
+                        </span>
+
+                        <h2>
+                          #
+                          {order.id
+                            ? order.id
+                                .substring(0, 8)
+                                .toUpperCase()
+                            : "N/A"}
+                        </h2>
+
+                        <p>
+                          {formatDate(
+                            order.created_at
+                          )}
+                        </p>
+
+                      </div>
+
+                      <span
+                        className={getStatusClass(
+                          order.status
                         )}
-                      </p>
+                      >
+                        {formatStatus(
+                          order.status
+                        )}
+                      </span>
+
                     </div>
 
-                    <span
-                      className={getStatusClass(
-                        order.status
+
+                    {/* ITEMS */}
+
+                    <div className="order-products">
+
+                      <div className="order-section-heading">
+                        <span>🛍️</span>
+                        <h3>Items Ordered</h3>
+                      </div>
+
+                      {Array.isArray(order.items) &&
+                      order.items.length > 0 ? (
+                        order.items.map(
+                          (item, index) => {
+
+                            const itemTotal =
+                              Number(
+                                item.price || 0
+                              ) *
+                              Number(
+                                item.quantity || 0
+                              );
+
+                            return (
+                              <div
+                                className="order-item"
+                                key={index}
+                              >
+
+                                <div className="order-item-info">
+
+                                  <strong>
+                                    {item.name}
+                                  </strong>
+
+                                  <span>
+                                    Quantity:{" "}
+                                    {item.quantity}
+                                  </span>
+
+                                </div>
+
+                                <strong className="order-item-price">
+                                  KES{" "}
+                                  {itemTotal.toFixed(
+                                    2
+                                  )}
+                                </strong>
+
+                              </div>
+                            );
+                          }
+                        )
+                      ) : (
+                        <p className="no-order-items">
+                          No item details available.
+                        </p>
                       )}
-                    >
-                      {order.status ||
-                        "pending"}
-                    </span>
 
-                  </div>
+                    </div>
 
-                  {/* PRODUCTS */}
 
-                  <div className="order-products">
+                    {/* TOTAL */}
 
-                    <h3>Items Ordered</h3>
+                    <div className="order-total">
 
-                    {Array.isArray(
-                      order.items
-                    ) &&
-                      order.items.map(
-                        (item, index) => (
+                      <span>
+                        Order Total
+                      </span>
 
-                          <div
-                            className="order-item"
-                            key={
-                              index
-                            }
-                          >
+                      <strong>
+                        KES{" "}
+                        {Number(
+                          order.total_amount || 0
+                        ).toFixed(2)}
+                      </strong>
 
-                            <div>
-                              <strong>
-                                {item.name}
-                              </strong>
+                    </div>
 
-                              <span>
-                                Quantity:{" "}
-                                {
-                                  item.quantity
-                                }
-                              </span>
-                            </div>
 
+                    {/* DELIVERY BUTTON */}
+
+                    {orderMapUrl && (
+                      <div className="order-delivery-link">
+
+                        <div>
+                          <span className="delivery-mini-icon">
+                            📍
+                          </span>
+
+                          <div>
                             <strong>
-                              KES{" "}
-                              {(
-                                Number(
-                                  item.price ||
-                                    0
-                                ) *
-                                Number(
-                                  item.quantity ||
-                                    0
-                                )
-                              ).toFixed(2)}
+                              Delivery Location
                             </strong>
 
+                            <small>
+                              Saved delivery address
+                            </small>
                           </div>
-
-                        )
-                      )}
-
-                  </div>
-
-                  {/* TOTAL */}
-
-                  <div className="order-total">
-
-                    <span>
-                      Total
-                    </span>
-
-                    <strong>
-                      KES{" "}
-                      {Number(
-                        order.total_amount ||
-                          0
-                      ).toFixed(2)}
-                    </strong>
-
-                  </div>
-
-                  {/* DELIVERY */}
-
-                  <div className="order-delivery">
-
-                    <h3>
-                      📍 Delivery Location
-                    </h3>
-
-                    {order.location && (
-                      <p>
-                        {order.location}
-                      </p>
-                    )}
-
-                    {order.latitude !== null &&
-                      order.longitude !==
-                        null && (
+                        </div>
 
                         <a
-                          href={
-                            order.location_url ||
-                            `https://www.google.com/maps?q=${order.latitude},${order.longitude}`
-                          }
+                          href={orderMapUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="order-map-button"
                         >
-                          🗺️ Open Delivery
-                          Location
+                          View Map →
                         </a>
 
-                      )}
+                      </div>
+                    )}
 
-                  </div>
 
-                  {/* ADDITIONAL INFORMATION */}
+                    {/* ADDITIONAL INFORMATION */}
 
-                  {order.additional_information && (
+                    {order.additional_information && (
+                      <div className="order-notes">
 
-                    <div className="order-notes">
+                        <strong>
+                          📝 Additional Information
+                        </strong>
 
-                      <h3>
-                        Additional Information
-                      </h3>
+                        <p>
+                          {
+                            order.additional_information
+                          }
+                        </p>
 
-                      <p>
-                        {
-                          order.additional_information
-                        }
-                      </p>
+                      </div>
+                    )}
 
-                    </div>
-
-                  )}
-
-                </article>
-
-              ))}
+                  </article>
+                );
+              })}
 
             </div>
-          )}
+
+          </>
+        )}
+
+
+        {/* BACK */}
 
         <a
           href="/"
@@ -341,7 +482,6 @@ export default function OrdersPage() {
         </a>
 
       </section>
-
     </main>
   );
 }
