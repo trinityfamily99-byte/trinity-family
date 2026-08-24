@@ -37,19 +37,16 @@ export default function OrdersPage() {
 
       if (error) {
         console.error("Orders loading error:", error);
-
         setMessage(
           "Unable to load your orders. Please try again."
         );
-
         setLoading(false);
         return;
       }
 
       setOrders(data || []);
     } catch (error) {
-      console.error(error);
-
+      console.error("Unexpected orders error:", error);
       setMessage(
         "Something went wrong while loading your orders."
       );
@@ -59,6 +56,8 @@ export default function OrdersPage() {
   }
 
   function formatDate(date) {
+    if (!date) return "Date unavailable";
+
     return new Date(date).toLocaleString();
   }
 
@@ -81,49 +80,16 @@ export default function OrdersPage() {
     }
   }
 
-  function getOrderNumber(id) {
-    if (!id) return "N/A";
-
-    return id
-      .substring(0, 8)
-      .toUpperCase();
-  }
-
   if (loading) {
     return (
       <main className="orders-page">
-
         <section className="orders-container">
-
-          <div className="orders-menu-header">
-            <div className="orders-icon">
-              📦
-            </div>
-
-            <div>
-              <h1>My Orders</h1>
-
-              <p>
-                View your previous orders
-              </p>
-            </div>
-          </div>
-
           <div className="orders-loading">
-            <div className="loading-icon">
-              📦
-            </div>
-
-            <h2>Loading Your Orders...</h2>
-
-            <p>
-              Please wait while we retrieve
-              your orders.
-            </p>
+            <div className="loading-icon">📦</div>
+            <h1>My Orders</h1>
+            <p>Loading your orders...</p>
           </div>
-
         </section>
-
       </main>
     );
   }
@@ -133,38 +99,35 @@ export default function OrdersPage() {
 
       <section className="orders-container">
 
-        {/* PAGE HEADER */}
+        {/* HEADER */}
 
-        <div className="orders-menu-header">
-
-          <div className="orders-icon">
-            📦
-          </div>
+        <div className="orders-header">
 
           <div className="orders-title">
 
-            <h1>
-              My Orders
-            </h1>
+            <div className="orders-icon">
+              📦
+            </div>
 
-            <p>
-              View your previous orders
-              and delivery details.
-            </p>
+            <div>
+              <h1>My Orders</h1>
+
+              <p>
+                View your previous orders and
+                delivery details.
+              </p>
+            </div>
 
           </div>
 
+          <a
+            href="/"
+            className="orders-home-button"
+          >
+            ← Shop
+          </a>
+
         </div>
-
-
-        {/* SHOP BUTTON */}
-
-        <a
-          href="/"
-          className="orders-shop-button"
-        >
-          ← Back to Shop
-        </a>
 
 
         {/* MESSAGE */}
@@ -172,72 +135,81 @@ export default function OrdersPage() {
         {message && (
           <div className="orders-message">
 
-            <div className="message-icon">
-              ⚠️
-            </div>
+            <p>{message}</p>
 
-            <div>
-              <strong>
-                Unable to load orders
-              </strong>
+            {!message.includes("log in") && (
+              <button
+                onClick={loadOrders}
+                className="retry-orders-button"
+              >
+                Try Again
+              </button>
+            )}
 
-              <p>
-                {message}
-              </p>
-
-              {!message.includes("log in") && (
-                <button
-                  onClick={loadOrders}
-                  className="retry-orders-button"
-                >
-                  Try Again
-                </button>
-              )}
-
-            </div>
+            {message.includes("log in") && (
+              <a
+                href="/login"
+                className="start-shopping-button"
+              >
+                Login
+              </a>
+            )}
 
           </div>
         )}
 
 
-        {/* NO ORDERS */}
+        {/* EMPTY */}
 
-        {!message &&
-          orders.length === 0 && (
-            <div className="empty-orders">
+        {!message && orders.length === 0 && (
+          <div className="empty-orders">
 
-              <div className="empty-orders-icon">
-                📦
-              </div>
-
-              <h2>
-                No Orders Yet
-              </h2>
-
-              <p>
-                You haven't placed any
-                orders yet.
-              </p>
-
-              <a
-                href="/#shop"
-                className="start-shopping-button"
-              >
-                🛒 Start Shopping
-              </a>
-
+            <div className="empty-orders-icon">
+              📦
             </div>
-          )}
+
+            <h2>No Orders Yet</h2>
+
+            <p>
+              You haven't placed any orders yet.
+            </p>
+
+            <a
+              href="/#shop"
+              className="start-shopping-button"
+            >
+              Start Shopping
+            </a>
+
+          </div>
+        )}
 
 
         {/* ORDERS */}
 
-        {!message &&
-          orders.length > 0 && (
-            <div className="orders-list">
+        {!message && orders.length > 0 && (
+          <div className="orders-list">
 
-              {orders.map((order) => (
+            {orders.map((order) => {
 
+              const orderLocation =
+                order.location || "";
+
+              const orderMapUrl =
+                order.location_url ||
+                (
+                  order.latitude !== null &&
+                  order.latitude !== undefined &&
+                  order.longitude !== null &&
+                  order.longitude !== undefined
+                )
+                  ? (
+                      order.location_url ||
+                      `https://www.google.com/maps?q=${order.latitude},${order.longitude}`
+                    )
+                  : "";
+
+              return (
                 <article
                   key={order.id}
                   className="order-card"
@@ -245,21 +217,24 @@ export default function OrdersPage() {
 
                   {/* ORDER TOP */}
 
-                  <div className="order-card-top">
+                  <div className="order-card-header">
 
-                    <div className="order-number">
+                    <div>
 
-                      <span className="small-label">
+                      <span className="order-label">
                         ORDER
                       </span>
 
                       <h2>
-                        #{getOrderNumber(
-                          order.id
-                        )}
+                        #
+                        {order.id
+                          ? order.id
+                              .substring(0, 8)
+                              .toUpperCase()
+                          : "N/A"}
                       </h2>
 
-                      <p>
+                      <p className="order-date">
                         {formatDate(
                           order.created_at
                         )}
@@ -272,8 +247,7 @@ export default function OrdersPage() {
                         order.status
                       )}
                     >
-                      {order.status ||
-                        "pending"}
+                      {order.status || "pending"}
                     </span>
 
                   </div>
@@ -281,79 +255,73 @@ export default function OrdersPage() {
 
                   {/* ITEMS */}
 
-                  <div className="order-section">
+                  <div className="order-products">
 
-                    <div className="order-section-title">
-                      <span>🛍️</span>
+                    <h3>🛍️ Items Ordered</h3>
 
-                      <h3>
-                        Items Ordered
-                      </h3>
-                    </div>
-
-                    {Array.isArray(
-                      order.items
-                    ) &&
+                    {Array.isArray(order.items) &&
+                    order.items.length > 0 ? (
                       order.items.map(
-                        (item, index) => {
+                        (item, index) => (
 
-                          const itemTotal =
-                            Number(
-                              item.price || 0
-                            ) *
-                            Number(
-                              item.quantity || 0
-                            );
+                          <div
+                            className="order-item"
+                            key={index}
+                          >
 
-                          return (
-                            <div
-                              className="order-item"
-                              key={index}
-                            >
+                            <div className="order-item-info">
 
-                              <div className="order-item-details">
-
-                                <strong>
-                                  {item.name}
-                                </strong>
-
-                                <span>
-                                  Quantity:{" "}
-                                  {
-                                    item.quantity
-                                  }
-                                </span>
-
-                              </div>
-
-                              <strong className="order-item-price">
-                                KES{" "}
-                                {itemTotal.toFixed(
-                                  2
-                                )}
+                              <strong>
+                                {item.name ||
+                                  item.Name ||
+                                  "Product"}
                               </strong>
 
+                              <span>
+                                Quantity:{" "}
+                                {item.quantity || 1}
+                              </span>
+
                             </div>
-                          );
-                        }
-                      )}
+
+                            <strong className="order-item-price">
+                              KES{" "}
+                              {(
+                                Number(
+                                  item.price ??
+                                    item.Price ??
+                                    0
+                                ) *
+                                Number(
+                                  item.quantity ||
+                                    1
+                                )
+                              ).toFixed(2)}
+                            </strong>
+
+                          </div>
+
+                        )
+                      )
+                    ) : (
+                      <p>
+                        No item details available.
+                      </p>
+                    )}
 
                   </div>
 
 
                   {/* TOTAL */}
 
-                  <div className="order-total-box">
+                  <div className="order-total">
 
-                    <span>
-                      Order Total
-                    </span>
+                    <span>Total</span>
 
                     <strong>
                       KES{" "}
                       {Number(
-                        order.total_amount ||
-                          0
+                        order.total_amount || 0
                       ).toFixed(2)}
                     </strong>
 
@@ -362,69 +330,45 @@ export default function OrdersPage() {
 
                   {/* DELIVERY */}
 
-                  <div className="order-delivery-box">
+                  {(orderLocation ||
+                    orderMapUrl) && (
 
-                    <div className="delivery-heading">
+                    <div className="order-delivery">
 
-                      <span>
-                        📍
-                      </span>
+                      <h3>
+                        📍 Delivery Location
+                      </h3>
 
-                      <div>
-                        <h3>
-                          Delivery Details
-                        </h3>
+                      {orderLocation && (
+                        <p>
+                          {orderLocation}
+                        </p>
+                      )}
 
-                        <small>
-                          Saved delivery
-                          location
-                        </small>
-                      </div>
+                      {orderMapUrl && (
+                        <a
+                          href={orderMapUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="order-map-button"
+                        >
+                          🗺️ Open Delivery Location
+                        </a>
+                      )}
 
                     </div>
 
-
-                    {order.location && (
-                      <p className="delivery-address">
-                        {order.location}
-                      </p>
-                    )}
-
-
-                    {(
-                      order.location_url ||
-                      (
-                        order.latitude !== null &&
-                        order.longitude !== null
-                      )
-                    ) && (
-
-                      <a
-                        href={
-                          order.location_url ||
-                          `https://www.google.com/maps?q=${order.latitude},${order.longitude}`
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="order-map-button"
-                      >
-                        🗺️ Open Delivery Location
-                      </a>
-
-                    )}
-
-                  </div>
+                  )}
 
 
                   {/* ADDITIONAL INFORMATION */}
 
                   {order.additional_information && (
+                    <div className="order-notes">
 
-                    <div className="order-notes-box">
-
-                      <div className="notes-heading">
+                      <h3>
                         📝 Additional Information
-                      </div>
+                      </h3>
 
                       <p>
                         {
@@ -433,24 +377,23 @@ export default function OrdersPage() {
                       </p>
 
                     </div>
-
                   )}
 
                 </article>
+              );
+            })}
 
-              ))}
-
-            </div>
-          )}
+          </div>
+        )}
 
 
-        {/* BOTTOM SHOP LINK */}
+        {/* BACK */}
 
         <a
           href="/"
           className="orders-back-home"
         >
-          ← Continue Shopping
+          ← Back to Trinity Family
         </a>
 
       </section>
