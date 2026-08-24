@@ -37,9 +37,11 @@ export default function OrdersPage() {
 
       if (error) {
         console.error("Orders loading error:", error);
+
         setMessage(
           "Unable to load your orders. Please try again."
         );
+
         setLoading(false);
         return;
       }
@@ -47,6 +49,7 @@ export default function OrdersPage() {
       setOrders(data || []);
     } catch (error) {
       console.error("Unexpected orders error:", error);
+
       setMessage(
         "Something went wrong while loading your orders."
       );
@@ -80,15 +83,50 @@ export default function OrdersPage() {
     }
   }
 
+  function getOrderNumber(order) {
+    if (!order?.id) return "N/A";
+
+    return order.id
+      .substring(0, 8)
+      .toUpperCase();
+  }
+
+  function getMapUrl(order) {
+    if (order?.location_url) {
+      return order.location_url;
+    }
+
+    if (
+      order?.latitude !== null &&
+      order?.latitude !== undefined &&
+      order?.longitude !== null &&
+      order?.longitude !== undefined
+    ) {
+      return `https://www.google.com/maps?q=${order.latitude},${order.longitude}`;
+    }
+
+    return "";
+  }
+
   if (loading) {
     return (
       <main className="orders-page">
         <section className="orders-container">
+
           <div className="orders-loading">
-            <div className="loading-icon">📦</div>
+
+            <div className="loading-icon">
+              📦
+            </div>
+
             <h1>My Orders</h1>
-            <p>Loading your orders...</p>
+
+            <p>
+              Loading your orders...
+            </p>
+
           </div>
+
         </section>
       </main>
     );
@@ -110,12 +148,14 @@ export default function OrdersPage() {
             </div>
 
             <div>
+
               <h1>My Orders</h1>
 
               <p>
                 View your previous orders and
                 delivery details.
               </p>
+
             </div>
 
           </div>
@@ -135,10 +175,13 @@ export default function OrdersPage() {
         {message && (
           <div className="orders-message">
 
-            <p>{message}</p>
+            <p>
+              {message}
+            </p>
 
             {!message.includes("log in") && (
               <button
+                type="button"
                 onClick={loadOrders}
                 className="retry-orders-button"
               >
@@ -159,7 +202,7 @@ export default function OrdersPage() {
         )}
 
 
-        {/* EMPTY */}
+        {/* EMPTY ORDERS */}
 
         {!message && orders.length === 0 && (
           <div className="empty-orders">
@@ -168,7 +211,9 @@ export default function OrdersPage() {
               📦
             </div>
 
-            <h2>No Orders Yet</h2>
+            <h2>
+              No Orders Yet
+            </h2>
 
             <p>
               You haven't placed any orders yet.
@@ -185,29 +230,18 @@ export default function OrdersPage() {
         )}
 
 
-        {/* ORDERS */}
+        {/* ORDERS LIST */}
 
         {!message && orders.length > 0 && (
           <div className="orders-list">
 
             {orders.map((order) => {
 
-              const orderLocation =
+              const location =
                 order.location || "";
 
-              const orderMapUrl =
-                order.location_url ||
-                (
-                  order.latitude !== null &&
-                  order.latitude !== undefined &&
-                  order.longitude !== null &&
-                  order.longitude !== undefined
-                )
-                  ? (
-                      order.location_url ||
-                      `https://www.google.com/maps?q=${order.latitude},${order.longitude}`
-                    )
-                  : "";
+              const mapUrl =
+                getMapUrl(order);
 
               return (
                 <article
@@ -215,23 +249,18 @@ export default function OrdersPage() {
                   className="order-card"
                 >
 
-                  {/* ORDER TOP */}
+                  {/* ORDER HEADER */}
 
                   <div className="order-card-header">
 
-                    <div>
+                    <div className="order-heading">
 
                       <span className="order-label">
                         ORDER
                       </span>
 
                       <h2>
-                        #
-                        {order.id
-                          ? order.id
-                              .substring(0, 8)
-                              .toUpperCase()
-                          : "N/A"}
+                        #{getOrderNumber(order)}
                       </h2>
 
                       <p className="order-date">
@@ -247,7 +276,8 @@ export default function OrdersPage() {
                         order.status
                       )}
                     >
-                      {order.status || "pending"}
+                      {order.status ||
+                        "pending"}
                     </span>
 
                   </div>
@@ -257,56 +287,71 @@ export default function OrdersPage() {
 
                   <div className="order-products">
 
-                    <h3>🛍️ Items Ordered</h3>
+                    <h3>
+                      🛍️ Items Ordered
+                    </h3>
 
                     {Array.isArray(order.items) &&
                     order.items.length > 0 ? (
+
                       order.items.map(
-                        (item, index) => (
+                        (item, index) => {
 
-                          <div
-                            className="order-item"
-                            key={index}
-                          >
+                          const itemName =
+                            item.name ||
+                            item.Name ||
+                            "Product";
 
-                            <div className="order-item-info">
+                          const quantity =
+                            Number(
+                              item.quantity || 1
+                            );
 
-                              <strong>
-                                {item.name ||
-                                  item.Name ||
-                                  "Product"}
+                          const price =
+                            Number(
+                              item.price ??
+                              item.Price ??
+                              0
+                            );
+
+                          const itemTotal =
+                            price * quantity;
+
+                          return (
+                            <div
+                              className="order-item"
+                              key={index}
+                            >
+
+                              <div className="order-item-info">
+
+                                <strong>
+                                  {itemName}
+                                </strong>
+
+                                <span>
+                                  Quantity:{" "}
+                                  {quantity}
+                                </span>
+
+                              </div>
+
+                              <strong className="order-item-price">
+                                KES{" "}
+                                {itemTotal.toFixed(2)}
                               </strong>
 
-                              <span>
-                                Quantity:{" "}
-                                {item.quantity || 1}
-                              </span>
-
                             </div>
-
-                            <strong className="order-item-price">
-                              KES{" "}
-                              {(
-                                Number(
-                                  item.price ??
-                                    item.Price ??
-                                    0
-                                ) *
-                                Number(
-                                  item.quantity ||
-                                    1
-                                )
-                              ).toFixed(2)}
-                            </strong>
-
-                          </div>
-
-                        )
+                          );
+                        }
                       )
+
                     ) : (
-                      <p>
+
+                      <p className="no-items">
                         No item details available.
                       </p>
+
                     )}
 
                   </div>
@@ -316,7 +361,9 @@ export default function OrdersPage() {
 
                   <div className="order-total">
 
-                    <span>Total</span>
+                    <span>
+                      Total
+                    </span>
 
                     <strong>
                       KES{" "}
@@ -328,26 +375,24 @@ export default function OrdersPage() {
                   </div>
 
 
-                  {/* DELIVERY */}
+                  {/* DELIVERY LOCATION */}
 
-                  {(orderLocation ||
-                    orderMapUrl) && (
-
+                  {(location || mapUrl) && (
                     <div className="order-delivery">
 
                       <h3>
                         📍 Delivery Location
                       </h3>
 
-                      {orderLocation && (
+                      {location && (
                         <p>
-                          {orderLocation}
+                          {location}
                         </p>
                       )}
 
-                      {orderMapUrl && (
+                      {mapUrl && (
                         <a
-                          href={orderMapUrl}
+                          href={mapUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="order-map-button"
@@ -357,7 +402,6 @@ export default function OrdersPage() {
                       )}
 
                     </div>
-
                   )}
 
 
@@ -387,7 +431,7 @@ export default function OrdersPage() {
         )}
 
 
-        {/* BACK */}
+        {/* BACK TO SHOP */}
 
         <a
           href="/"
